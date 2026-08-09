@@ -77,12 +77,10 @@ def run_lookup(query: str, database: pd.DataFrame, source_label: str):
         return
 
     match = find_match(query, database)
-    if match is not None:
+ if match is not None:
         display_match(match, query)
     else:
-        st.error(f"No match found in database for **{query}** ({source_label}).")
-        st.info("Try a partial code or check spelling. Known codes: " + ", ".join(database["Code"].tolist()))
-
+        st.error(f"❌ '{query}' डेटाबेस में नहीं मिला।")
 
 def main():
     st.set_page_config(page_title="Mobile Scrap PCB Identifier", page_icon="🔍", layout="wide")
@@ -91,7 +89,7 @@ def main():
 
     database = load_database()
     if database.empty:
-        st.error(f"Database not found or empty. Expected file: `{DATABASE_PATH}`")
+        st.error(f"Database not found or empty. Expected file: {DATABASE_PATH}")
         st.stop()
 
     tab_photo, tab_manual = st.tabs(["Photo Upload", "Manual Code Search"])
