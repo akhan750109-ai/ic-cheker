@@ -77,7 +77,7 @@ def run_lookup(query: str, database: pd.DataFrame, source_label: str):
         return
 
     match = find_match(query, database)
- if match is not None:
+    if match is not None:
         display_match(match, query)
     else:
         st.error(f"❌ '{query}' डेटाबेस में नहीं मिला।")
