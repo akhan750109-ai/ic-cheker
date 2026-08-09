@@ -17,7 +17,7 @@ CODE_PATTERN = re.compile(r"[A-Z0-9][A-Z0-9\-]{3,15}", re.IGNORECASE)
 def load_database() -> pd.DataFrame:
     if not DATABASE_PATH.exists():
         return pd.DataFrame(columns=["Code", "CPU", "RAM_ROM", "Grade"])
-    df = pd.read_csv(DATABASE_PATH, dtype=str)
+    df = pd.read_csv(DATABASE_PATH, dtype=str, on_bad_lines="skip")
     df["Code"] = df["Code"].str.strip().str.upper()
     return df
 
