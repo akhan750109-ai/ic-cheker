@@ -1,160 +1,110 @@
-import re
-from pathlib import Path
-from typing import Optional
-
-import easyocr
-import pandas as pd
 import streamlit as st
-from PIL import Image
+import pandas as pd
+import os
+import google.generativeai as genai
 
-DATABASE_PATH = Path(__file__).parent / "database.csv"
+# Configure Gemini AI with your API Key
+GEMINI_API_KEY = "AIzaSyCKTYBOs6Ro0IYwzR1oHQxfHBD45YsAEZY"
+genai.configure(api_key=GEMINI_API_KEY)
 
-# Typical PCB / IC markings: MT6761V, CX90B8CAM, SM-A125F, etc.
-CODE_PATTERN = re.compile(r"[A-Z0-9][A-Z0-9\-]{3,15}", re.IGNORECASE)
-
+# Database Configuration
+DATABASE_PATH = "database.csv"
 
 @st.cache_data
-def load_database() -> pd.DataFrame:
-    if not DATABASE_PATH.exists():
-        return pd.DataFrame(columns=["Code", "CPU", "RAM_ROM", "Grade"])
-    df = pd.read_csv(DATABASE_PATH, dtype=str, on_bad_lines="skip")
-    df["Code"] = df["Code"].str.strip().str.upper()
-    return df
+def load_database():
+    if os.path.exists(DATABASE_PATH):
+        try:
+            df = pd.read_csv(DATABASE_PATH)
+            df.columns = df.columns.str.strip()
+            return df
+        except Exception as e:
+            st.error(f"Error loading database: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
 
-
-@st.cache_resource
-def get_ocr_reader():
-    return easyocr.Reader(["en"], gpu=False)
-
-
-def normalize_code(code: str) -> str:
-    return code.strip().upper()
-
-
-def find_match(query: str, database: pd.DataFrame) -> Optional[pd.DataFrame]:
-    if not query or database.empty:
+def find_match_in_csv(query: str, database: pd.DataFrame):
+    if database.empty or "Code" not in database.columns:
         return None
-
-    normalized = normalize_code(query)
-    exact = database[database["Code"] == normalized]
-    if not exact.empty:
-        return exact.iloc[[0]]
-
-    partial = database[database["Code"].str.contains(normalized, regex=False, na=False)]
-    if not partial.empty:
-        return partial.iloc[[0]]
-
+    
+    clean_query = str(query).strip().upper()
+    database_codes = database["Code"].astype(str).str.strip().str.upper()
+    matched_rows = database[database_codes == clean_query]
+    
+    if not matched_rows.empty:
+        return matched_rows
     return None
 
+def search_with_ai(query: str):
+    try:
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        prompt = f"""
+        You are an expert mobile hardware and scrap PCB component identifier.
+        Look up the following mobile IC/PCB part number or code: '{query}'
+        
+        Provide the output strictly in this simple format:
+        - *Brand/Manufacturer*: (e.g. Samsung, MediaTek, Qualcomm, SK Hynix, etc.)
+        - *CPU / Component Name*: (Full name or description)
+        - *RAM / Storage*: (e.g. 4GB/64GB or N/A)
+        - *Component Type*: (e.g. eMMC, eMCP, UFS, Power IC, CPU, Audio IC)
+        - *Scrap Grade Category*: (Grade A, B, or C based on general scrap market value)
 
-def extract_codes_from_text(texts: list[tuple]) -> list[str]:
-    seen = set()
-    codes = []
-    for _, text, _ in texts:
-        for token in CODE_PATTERN.findall(text.upper()):
-            token = token.upper()
-            if len(token) >= 4 and token not in seen:
-                seen.add(token)
-                codes.append(token)
-    return codes
+        If you don't find exact details, provide the closest known specifications for this chip/code.
+        """
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"AI सर्च करने में समस्या आई: {e}"
 
-
-def display_match(result: pd.DataFrame, matched_code: str):
+def display_csv_match(result: pd.DataFrame, matched_code: str):
     row = result.iloc[0]
-    st.success(f"Match found for **{matched_code}**")
+    st.success(f"✅ डेटाबेस (CSV) में मैच मिला: *{matched_code}*")
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Code", row["Code"])
-        st.metric("CPU", row["CPU"])
+        st.metric("Code", row.get("Code", "N/A"))
+        st.metric("CPU / Chip", row.get("CPU", "N/A"))
     with col2:
-        st.metric("RAM / ROM", row["RAM_ROM"])
-        st.metric("Grade", row["Grade"])
+        st.metric("RAM / ROM", row.get("RAM_ROM", "N/A"))
+        st.metric("Grade", row.get("Grade", "N/A"))
 
-
-def run_lookup(query: str, database: pd.DataFrame, source_label: str):
-    if not query:
-        st.warning("Please enter or upload a code to search.")
+def run_lookup(query: str, database: pd.DataFrame):
+    if not query.strip():
+        st.warning("कृपया कोई IC या PCB कोड टाइप करें।")
         return
 
-    match = find_match(query, database)
-    if match is not None:
-        display_match(match, query)
+    # Step 1: Check Local CSV Database
+    csv_match = find_match_in_csv(query, database)
+    
+    if csv_match is not None:
+        display_csv_match(csv_match, query)
     else:
-        st.error(f"❌ '{query}' डेटाबेस में नहीं मिला।")
+        # Step 2: Fallback to AI Search if not in CSV
+        st.info(f"🔍 '{query}' लोकल डेटाबेस में नहीं मिला। AI द्वारा खोजा जा रहा है...")
+        with st.spinner("AI डेटा ढूँढ रहा है..."):
+            ai_result = search_with_ai(query)
+            st.subheader(f"🤖 AI खोज परिणाम: {query}")
+            st.markdown(ai_result)
 
 def main():
-    st.set_page_config(page_title="Mobile Scrap PCB Identifier", page_icon="🔍", layout="wide")
-    st.title("Mobile Scrap PCB Identifier")
-    st.caption("Upload a PCB photo or type a code to look up CPU, RAM/ROM, and grade.")
+    st.set_page_config(page_title="Mobile Scrap PCB & IC Identifier", page_icon="🔍", layout="wide")
+    st.title("📱 Mobile Scrap PCB & IC Identifier")
+    st.caption("आपकी अपनी CSV फ़ाइल + AI सर्च इंटीग्रेशन")
 
     database = load_database()
-    if database.empty:
-        st.error(f"Database not found or empty. Expected file: {DATABASE_PATH}")
-        st.stop()
 
-    tab_photo, tab_manual = st.tabs(["Photo Upload", "Manual Code Search"])
+    tab_manual, tab_photo = st.tabs(["Manual IC Code Search", "Photo Upload"])
+
+    with tab_manual:
+        st.subheader("IC या PCB कोड खोजें")
+        query_input = st.text_input("Enter PCB / IC Code:", placeholder="e.g. 32EMCP16, MT6739, SDM450")
+        if st.button("Search Code"):
+            run_lookup(query_input, database)
 
     with tab_photo:
         st.subheader("Upload PCB Photo")
-        st.write("Upload a clear photo of the PCB. EasyOCR will scan printed codes on the board.")
+        uploaded_file = st.file_uploader("Choose an image", type=["png", "jpg", "jpeg", "webp"])
+        if uploaded_file is not None:
+            st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
+            st.info("Photo processing feature (EasyOCR) coming soon...")
 
-        uploaded = st.file_uploader("Choose an image", type=["png", "jpg", "jpeg", "webp", "bmp"])
-
-        if uploaded is not None:
-            image = Image.open(uploaded).convert("RGB")
-            st.image(image, caption="Uploaded PCB image", use_container_width=True)
-
-            with st.spinner("Running OCR — first run may download models (~100 MB)..."):
-                import numpy as np
-
-                reader = get_ocr_reader()
-                results = reader.readtext(np.array(image))
-
-            if not results:
-                st.warning("No text detected in the image. Try a clearer, well-lit photo.")
-            else:
-                extracted_codes = extract_codes_from_text(results)
-
-                with st.expander("All OCR text detected"):
-                    for bbox, text, confidence in results:
-                        st.write(f"**{text}** (confidence: {confidence:.0%})")
-
-                if not extracted_codes:
-                    st.warning("Text was found but no PCB-style codes were recognized.")
-                else:
-                    st.write("**Extracted codes:**")
-                    selected = st.selectbox(
-                        "Select a code to look up",
-                        extracted_codes,
-                        key="ocr_code_select",
-                    )
-
-                    if st.button("Look up selected code", key="ocr_lookup_btn"):
-                        run_lookup(selected, database, "OCR")
-
-                    st.divider()
-                    st.write("**Quick lookup for all extracted codes:**")
-                    for code in extracted_codes:
-                        match = find_match(code, database)
-                        if match is not None:
-                            with st.container(border=True):
-                                display_match(match, code)
-                        else:
-                            st.caption(f"{code} — no database match")
-
-    with tab_manual:
-        st.subheader("Manual Code Search")
-        st.write("Type a motherboard or IC code printed on the PCB.")
-
-        manual_code = st.text_input(
-            "Enter code",
-            placeholder="e.g. MT6761V or CX90B8CAM",
-            key="manual_code_input",
-        ).strip()
-
-        if st.button("Search", key="manual_search_btn"):
-            run_lookup(manual_code, database, "manual entry")
-
-
-if __name__ == "__main__":
+if _name_ == "_main_":
     main()
