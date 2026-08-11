@@ -37,7 +37,7 @@ def find_match_in_csv(query: str, database: pd.DataFrame):
 
 def search_with_ai(query: str):
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+ model = genai.GenerativeModel("gemini-2.5-flash")
         prompt = f"""
         You are an expert mobile hardware and scrap PCB component identifier.
         Look up the following mobile IC/PCB part number or code: '{query}'
@@ -106,5 +106,6 @@ def main():
         if uploaded_file is not None:
             st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
             st.info("Photo processing feature (EasyOCR) coming soon...")
-if __name__ == "__main__":
+
+if _name_ == "_main_":
     main()
