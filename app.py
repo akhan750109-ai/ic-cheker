@@ -37,8 +37,8 @@ def find_match_in_csv(query: str, database: pd.DataFrame):
 
 def search_with_ai(query: str):
     try:
- model = genai.GenerativeModel("gemini-2.5-flash")
-        prompt = f"""
+model = genai.GenerativeModel("gemini-2.5-flash")
+prompt = f"""
         You are an expert mobile hardware and scrap PCB component identifier.
         Look up the following mobile IC/PCB part number or code: '{query}'
         
