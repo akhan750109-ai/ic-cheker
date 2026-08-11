@@ -1,4 +1,4 @@
-import streamlit as st
+mport streamlit as st
 import pandas as pd
 import os
 import google.generativeai as genai
@@ -14,7 +14,8 @@ DATABASE_PATH = "database.csv"
 def load_database():
     if os.path.exists(DATABASE_PATH):
         try:
-            df = pd.read_csv(DATABASE_PATH)
+            # on_bad_lines='skip' खराब लाइनों की वजह से ऐप को क्रैश होने से रोकेगा
+            df = pd.read_csv(DATABASE_PATH, on_bad_lines='skip')
             df.columns = df.columns.str.strip()
             return df
         except Exception as e:
@@ -106,5 +107,5 @@ def main():
             st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
             st.info("Photo processing feature (EasyOCR) coming soon...")
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     main()
