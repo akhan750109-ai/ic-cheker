@@ -1,5 +1,6 @@
 streamlit>=1.28.0
-easyocr>=1.7.0
 pandas>=2.0.0
+google-generativeai
 Pillow>=10.0.0
+easyocr>=1.7.0
 opencv-python-headless>=4.8.0
