@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
-from duckduckgo_search import DDGS
+import urllib.parse
 
-# Page Config
+# 1. Page Configuration
 st.set_page_config(page_title="PCB & IC Code Checker", page_icon="⚡", layout="centered")
 
-# 1. Local Database Fast Load
+# 2. Database Load (Caching for speed)
 @st.cache_data
 def load_data():
     try:
@@ -13,7 +13,7 @@ def load_data():
     except Exception:
         return None
 
-# 2. Instant Local Search Function
+# 3. Fast Local Database Search
 def search_local(query, df):
     if not query or not query.strip():
         return None
@@ -21,21 +21,9 @@ def search_local(query, df):
     mask = df.apply(lambda row: row.astype(str).str.lower().str.contains(query_str, regex=False).any(), axis=1)
     return df[mask]
 
-# 3. Superfast Instant Web Search (No AI Delay, No API Key Error)
-def search_web_instant(query):
-    try:
-        results = []
-        search_term = f"{query} IC PCB details datasheet function"
-        with DDGS() as ddgs:
-            for r in ddgs.text(search_term, max_results=3):
-                results.append(r)
-        return results
-    except Exception as e:
-        return None
-
-# Main Application
+# 4. Main Application Interface
 def main():
-    st.title("⚡ Instant PCB & IC Code Checker")
+    st.title("⚡ Fast PCB & IC Code Checker")
 
     database = load_data()
 
@@ -44,7 +32,7 @@ def main():
     with tab_manual:
         st.subheader("IC या PCB कोड खोजें")
         
-        # Fast Form Submit
+        # Immediate Search Form
         with st.form(key="search_form"):
             query_input = st.text_input("Enter PCB / IC Code:", placeholder="e.g. NE555, LM358...")
             submit_button = st.form_submit_button(label="Search Code")
@@ -52,30 +40,29 @@ def main():
         if submit_button and query_input.strip():
             clean_query = query_input.strip()
             
-            # Step A: Local Search First
+            # Step A: Check Local Database First
             found_in_local = False
             if database is not None:
                 local_results = search_local(clean_query, database)
                 if local_results is not None and not local_results.empty:
                     found_in_local = True
-                    st.success(f"✅ लोकल डेटाबेस में '{clean_query}' मिला:")
+                    st.success(f"✅ डेटाबेस में '{clean_query}' मिला:")
                     st.dataframe(local_results, use_container_width=True)
 
-            # Step B: Fast Web Search if not found in Database
+            # Step B: Instant Direct Web Links (0 Delay, No Module Error)
             if not found_in_local:
-                st.info(f"🔍 '{clean_query}' लोकल डेटाबेस में नहीं मिला। तुरंत वेब से खोजा जा रहा है...")
+                st.warning(f"🔍 '{clean_query}' लोकल डेटाबेस में नहीं मिला।")
                 
-                web_results = search_web_instant(clean_query)
-                
-                if web_results:
-                    st.success(f"🌐 '{clean_query}' के लिए वेब खोज परिणाम:")
-                    for item in web_results:
-                        st.markdown(f"*[{item['title']}]({item['href']})*")
-                        st.write(item['body'])
-                        st.divider()
-                else:
-                    st.warning("वेब पर तुरंत परिणाम नहीं मिल सका। आप सीधे गूगल पर देख सकते हैं:")
-                    st.markdown(f"[👉 Click here to search '{clean_query}' on Google](https://www.google.com/search?q={clean_query}+IC+datasheet)")
+                encoded_q = urllib.parse.quote(f"{clean_query} IC datasheet pinout details")
+                google_url = f"https://www.google.com/search?q={encoded_q}"
+                alldatasheet_url = f"https://www.alldatasheet.com/view.jsp?Searchword={urllib.parse.quote(clean_query)}"
+
+                st.markdown("### 🌐 डायरेक्ट वेब परिणाम (Instant Search):")
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.link_button("👉 Google पर खोजें (Datasheet/Pinout)", google_url, use_container_width=True)
+                with col2:
+                    st.link_button("👉 AllDataSheet पर खोजें", alldatasheet_url, use_container_width=True)
 
     with tab_photo:
         st.subheader("Upload PCB Photo")
