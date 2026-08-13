@@ -91,5 +91,5 @@ def main():
             st.link_button("👉 AllDataSheet Search", f"https://www.alldatasheet.com/view.jsp?Searchword={urllib.parse.quote(user_input)}", use_container_width=True)
 
 # Correct Syntax Execution (No Indentation or Name Errors)
-if _name_ == "_main_":
+if __name__ == "__main__":
     main()
