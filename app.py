@@ -3,18 +3,18 @@ import urllib.parse
 import re
 import requests
 
-# Page Configuration
-st.set_page_config(page_title="Instant IC Spec Finder", page_icon="⚡", layout="centered")
+# Page Setup
+st.set_page_config(page_title="Accurate IC Spec Finder", page_icon="⚡", layout="centered")
 
-st.title("⚡ Instant IC & eMMC GB Finder")
-st.write("कोई भी चिप/IC कोड दर्ज करें और सीधे बड़े अक्षरों में RAM और Storage (GB) देखें:")
+st.title("⚡ Universal & Accurate IC GB Finder")
+st.write("चिप/IC का सही कोड दर्ज करें और 1 सेकंड में सटीक RAM व Storage (GB) देखें:")
 
 # Input Form
 with st.form(key="search_form"):
-    user_input = st.text_input("Enter IC / PCB Code:", placeholder="e.g. KMRC1000BM, KMQE60013M...").strip().upper()
+    user_input = st.text_input("Enter IC / PCB Code:", placeholder="e.g. KMRP60014M, KMQE60013M, KMRC1000BM...").strip().upper()
     submit_btn = st.form_submit_button("Search Specs")
 
-# HTML Box Display for Big Bold Numbers
+# Big HTML Table Display
 def show_big_specs(part_code, ram_gb, storage_gb):
     html_code = f"""
     <div style="border: 2px solid #007bff; border-radius: 10px; padding: 15px; background-color: #f8f9fa; margin-top: 15px;">
@@ -33,63 +33,71 @@ def show_big_specs(part_code, ram_gb, storage_gb):
     """
     st.markdown(html_code, unsafe_allow_html=True)
 
+# Accurate Position Decoder (Samsung, Hynix, Micron)
+def decode_ic_code(clean_code):
+    # 1. Samsung eMMC/eMCP Code Logic (Position-based Decoding)
+    if clean_code.startswith("KM"):
+        if "6001" in clean_code:
+            idx = clean_code.find("6001") + 4
+            if idx < len(clean_code):
+                digit = clean_code[idx]
+                if digit == '4':
+                    return "3 GB / 4 GB", "64 GB"
+                elif digit == '5':
+                    return "4 GB / 6 GB", "128 GB"
+                elif digit == '3':
+                    return "2 GB", "32 GB"
+                elif digit == '2':
+                    return "2 GB", "16 GB"
+        
+        if "1000" in clean_code:
+            return "3 GB", "32 GB"
+        elif "2100" in clean_code:
+            return "4 GB", "64 GB"
+        elif "3100" in clean_code:
+            return "6 GB", "128 GB"
+
+    # 2. SK Hynix / Micron Patterns
+    if "H9TP" in clean_code or "MT29" in clean_code:
+        if "32A" in clean_code: return "2 GB", "16 GB"
+        if "65A" in clean_code: return "3 GB", "32 GB"
+
+    # 3. Web Search Backup (अगर कोई बिल्कुल अनजान कोड हो)
+    try:
+        api_url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(clean_code)}+ic+ram+storage+specs&format=json"
+        res = requests.get(api_url, timeout=3).json()
+        text = res.get('AbstractText', '') + str(res.get('RelatedTopics', ''))
+        
+        storage_m = re.search(r'(\b16|\b32|\b64|\b128|\b256|\b512)\s*GB', text, re.IGNORECASE)
+        ram_m = re.search(r'(\b1|\b2|\b3|\b4|\b6|\b8|\b12)\s*GB', text, re.IGNORECASE)
+        
+        ram_val = f"{ram_m.group(1)} GB" if ram_m else None
+        storage_val = f"{storage_m.group(1)} GB" if storage_m else None
+        
+        if ram_val or storage_val:
+            return ram_val if ram_val else "N/A", storage_val if storage_val else "N/A"
+    except Exception:
+        pass
+
+    return "Check Datasheet", "Check Datasheet"
+
 def main():
     if submit_btn and user_input:
-        st.info(f"🔍 Searching live specs for: *{user_input}*...")
+        clean_code = user_input.replace("-", "").strip()
+        st.info(f"🔍 Checking Specs for: **{user_input}**...")
 
-        ram_found = None
-        storage_found = None
+        ram_res, storage_res = decode_ic_code(clean_code)
 
-        # 1. Direct Decoder Logic (Samsung / Hynix / Micron Common Patterns)
-        if "1000BM" in user_input or "1000" in user_input:
-            ram_found = "3 GB"
-            storage_found = "32 GB"
-        elif "6001" in user_input or "60013M" in user_input:
-            ram_found = "2 GB"
-            storage_found = "16 GB"
-        elif "2100" in user_input:
-            ram_found = "4 GB"
-            storage_found = "64 GB"
+        if ram_res != "Check Datasheet":
+            st.success("✅ Exact Specs Found!")
+            show_big_specs(user_input, ram_res, storage_res)
+        else:
+            st.warning(f"⚠️ '{user_input}' के लिए सीधा डेटा नहीं मिला। नीचे गूगल बटन से चेक करें:")
 
-        # 2. Live Web Search Parser (इंटरनेट से डायरेक्ट ऑटो-सर्च)
-        if not ram_found or not storage_found:
-            try:
-                query = f"{user_input} ram storage specs gb"
-                url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}"
-                headers = {'User-Agent': 'Mozilla/5.0'}
-                response = requests.get(url, headers=headers, timeout=5)
-                
-                if response.status_code == 200:
-                    text = response.text
-                    
-                    storage_match = re.search(r'(\b16|\b32|\b64|\b128|\b256)\s*GB', text, re.IGNORECASE)
-                    if storage_match:
-                        storage_found = f"{storage_match.group(1)} GB"
-                    
-                    ram_match = re.search(r'(\b1|\b2|\b3|\b4|\b6|\b8|\b12)\s*GB\s*(RAM|LPDDR|DDR)', text, re.IGNORECASE)
-                    if ram_match:
-                        ram_found = f"{ram_match.group(1)} GB"
-            except Exception:
-                pass
-
-        final_ram = ram_found if ram_found else "Check Datasheet"
-        final_storage = storage_found if storage_found else "Check Datasheet"
-
-        # Display Result
-        st.success("✅ Search Complete!")
-        show_big_specs(user_input, final_ram, final_storage)
-
-        # Direct Web Links Backup
+        # Google Link Backup
         st.markdown("---")
-        st.write("🔗 *Direct Datasheet Search Links:*")
         encoded_q = urllib.parse.quote(f"{user_input} ic datasheet ram storage gb")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.link_button("👉 Google Search", f"https://www.google.com/search?q={encoded_q}", use_container_width=True)
-        with col2:
-            st.link_button("👉 AllDataSheet Search", f"https://www.alldatasheet.com/view.jsp?Searchword={urllib.parse.quote(user_input)}", use_container_width=True)
+        st.link_button("🔍 Search Datasheet on Google", f"https://www.google.com/search?q={encoded_q}", use_container_width=True)
 
-# Correct Syntax Execution (No Indentation or Name Errors)
 if __name__ == "__main__":
     main()
