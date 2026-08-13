@@ -106,5 +106,5 @@ def main():
         if uploaded_file is not None:
             st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
             st.info("Photo processing feature (EasyOCR) coming soon...")
- if__name__ == "__main__":
+if__name__ == "__main__":
     main()
