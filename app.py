@@ -70,4 +70,5 @@ def main():
         if uploaded_file is not None:
             st.image(uploaded_file, caption="Uploaded Image", use_container_width=True)
             st.info("Photo processing feature coming soon...")
-if __name__ == "__main__":
+if __name__ == "__main__":   
+    main()
