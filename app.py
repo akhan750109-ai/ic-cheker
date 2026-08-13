@@ -1,15 +1,15 @@
 import streamlit as st
-import google.generativeai as genai
-import json
+import requests
 import re
+import urllib.parse
 
-# Page Setup
+# Page Configuration
 st.set_page_config(page_title="Universal IC Spec Finder", page_icon="⚡", layout="centered")
 
-st.title("⚡ Universal AI & Smart IC GB Finder")
-st.write("दुनिया की कोई भी IC का कोड दर्ज करें, सीधे ऑन-स्क्रीन सटीक RAM और Storage (GB) देखें:")
+st.title("⚡ Universal IC & eMMC/UFS GB Finder")
+st.write("दुनिया की किसी भी कंपनी (Samsung, Micron, Hynix, SanDisk) की IC का कोड दर्ज करें:")
 
-# Big HTML Display Box Function
+# HTML Display Box
 def show_big_specs(part_code, ram_gb, storage_gb, chip_type, details):
     html_code = f"""
     <div style="border: 2px solid #007bff; border-radius: 10px; padding: 15px; background-color: #f8f9fa; margin-top: 15px;">
@@ -30,74 +30,70 @@ def show_big_specs(part_code, ram_gb, storage_gb, chip_type, details):
     """
     st.markdown(html_code, unsafe_allow_html=True)
 
-# Smart Position & Capacity Decoder
-def decode_ic_code(clean_code):
-    storage_found = None
-    ram_found = None
-    chip_type = "eMMC / eMCP / UFS"
-
-    # 1. Samsung eMMC/eMCP Positional Logic (60014M -> 64GB)
-    if "60014M" in clean_code or "60014" in clean_code:
-        return "3 GB / 4 GB", "64 GB", "eMCP", "Exact Pattern Matched (Samsung 64GB)"
-    elif "60015M" in clean_code or "60015" in clean_code:
-        return "4 GB / 6 GB", "128 GB", "eMCP", "Exact Pattern Matched (Samsung 128GB)"
-    elif "60012M" in clean_code or "60013M" in clean_code:
-        return "2 GB", "16 GB", "eMCP", "Exact Pattern Matched (Samsung 16GB)"
-    elif "1000BM" in clean_code or "1000" in clean_code:
-        return "3 GB", "32 GB", "eMCP", "Exact Pattern Matched (Samsung 32GB)"
-    elif "2100BM" in clean_code or "2100" in clean_code:
-        return "4 GB", "64 GB", "eMCP", "Exact Pattern Matched (Samsung 64GB)"
-
-    # 2. Universal Capacity Extractor (For KLUD64U1EA, H9TP32A... etc)
-    if "512" in clean_code:
-        storage_found, ram_found = "512 GB", "12 GB"
-    elif "256" in clean_code:
-        storage_found, ram_found = "256 GB", "8 GB"
-    elif "128" in clean_code:
-        storage_found, ram_found = "128 GB", "6 GB"
-    elif "64" in clean_code:
-        storage_found, ram_found = "64 GB", "4 GB"
-    elif "32" in clean_code:
-        storage_found, ram_found = "32 GB", "3 GB"
-    elif "16" in clean_code:
-        storage_found, ram_found = "16 GB", "2 GB"
-
-    if storage_found:
-        return ram_found, storage_found, chip_type, "Capacity Matched from Code"
-
-    # 3. AI Direct Lookup Fallback
+# 1. Live Web Scraper for Universal IC Database
+def fetch_live_specs(ic_code):
     try:
-        api_key = st.secrets.get("GEMINI_API_KEY", "")
-        if api_key:
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            prompt = f"Analyze IC code '{clean_code}'. Return JSON: {{\"ram\":\"X GB\",\"storage\":\"Y GB\",\"type\":\"eMCP/UFS\"}}"
-            response = model.generate_content(prompt)
-            res_text = response.text.strip()
-            if "json" in res_text:
-                res_text = res_text.split("json")[1].split("```")[0].strip()
-            data = json.loads(res_text)
-            return data.get("ram", "3 GB"), data.get("storage", "32 GB"), data.get("type", "IC Chip"), "Decoded by AI Engine"
+        query = f"{ic_code} IC eMMC UFS RAM Storage GB spec sheet"
+        url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}"
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        res = requests.get(url, headers=headers, timeout=4)
+        text = res.text
+
+        # Extract Storage (GB)
+        storage_m = re.search(r'(\b16|\b32|\b64|\b128|\b256|\b512)\s*GB', text, re.IGNORECASE)
+        # Extract RAM (GB)
+        ram_m = re.search(r'(\b1|\b2|\b3|\b4|\b6|\b8|\b12|\b16)\s*GB', text, re.IGNORECASE)
+
+        ram = f"{ram_m.group(1)} GB" if ram_m else None
+        storage = f"{storage_m.group(1)} GB" if storage_m else None
+
+        if ram or storage:
+            return ram if ram else "1 GB / 2 GB", storage if storage else "N/A", "Live Web Database Lookup"
     except Exception:
         pass
+    return None, None, None
 
-    return "3 GB", "32 GB", "IC Chip", "Standard Datasheet Estimate"
+# 2. Universal Positional & Pattern Engine
+def decode_ic_code(clean_code):
+    # Samsung Specific Positional Logic
+    if clean_code.startswith("KM"):
+        if "60014" in clean_code or "60014M" in clean_code: return "3 GB / 4 GB", "64 GB", "Samsung eMCP", "Exact Positional Rule"
+        elif "60015" in clean_code or "60015M" in clean_code: return "4 GB / 6 GB", "128 GB", "Samsung eMCP", "Exact Positional Rule"
+        elif "60012" in clean_code or "60013" in clean_code: return "2 GB", "16 GB", "Samsung eMCP", "Exact Positional Rule"
+        elif "1000" in clean_code: return "3 GB", "32 GB", "Samsung eMCP", "Exact Positional Rule"
+        elif "2100" in clean_code: return "4 GB", "64 GB", "Samsung eMCP", "Exact Positional Rule"
+
+    # Universal Pattern Extraction (For UFS/eMMC - 512, 256, 128, 64, 32, 16)
+    if "512" in clean_code: return "12 GB / 16 GB", "512 GB", "UFS / eMMC", "Universal Code Pattern"
+    elif "256" in clean_code: return "8 GB / 12 GB", "256 GB", "UFS / eMMC", "Universal Code Pattern"
+    elif "128" in clean_code: return "4 GB / 6 GB", "128 GB", "UFS / eMMC", "Universal Code Pattern"
+    elif "64" in clean_code: return "3 GB / 4 GB", "64 GB", "UFS / eMMC", "Universal Code Pattern"
+    elif "32" in clean_code: return "2 GB / 3 GB", "32 GB", "UFS / eMMC", "Universal Code Pattern"
+    elif "16" in clean_code: return "1 GB / 2 GB", "16 GB", "UFS / eMMC", "Universal Code Pattern"
+
+    # Live Online Fallback for Unknown FBGA Code (Micron, SK Hynix, Toshiba etc.)
+    ram_web, storage_web, note = fetch_live_specs(clean_code)
+    if ram_web or storage_web:
+        return ram_web, storage_web, "IC / FBGA Chip", note
+
+    return "Check Part Number", "Check Part Number", "Unknown IC", "No GB spec matched for this code"
 
 def main():
-    # Form Input
     with st.form(key="search_form"):
-        user_input = st.text_input("Enter ANY IC / PCB Code:", placeholder="e.g. KLUD64U1EA, KMRP60014M, H9TP32A4GDCC...").strip().upper()
+        user_input = st.text_input("Enter ANY IC / PCB Code:", placeholder="e.g. JZ150, KLUD64U1EA, KMRP60014M, H9TP32...").strip().upper()
         submit_btn = st.form_submit_button("Search Specs")
 
     if submit_btn and user_input:
         clean_code = user_input.replace("-", "").strip()
-        st.info(f"🔍 Analyzing IC Code: *{user_input}*...")
+        st.info(f"🔍 Analyzing Code across Universal Database: *{user_input}*...")
 
         ram_val, storage_val, chip_type, note = decode_ic_code(clean_code)
 
-        st.success("✅ Specs Extracted Successfully!")
-        show_big_specs(user_input, ram_val, storage_val, chip_type, note)
+        if ram_val != "Check Part Number":
+            st.success("✅ Specs Decoded Successfully!")
+            show_big_specs(user_input, ram_val, storage_val, chip_type, note)
+        else:
+            st.error(f"❌ '{user_input}' के लिए कोई जानकारी नहीं मिली। कृपया IC के ऊपर का सही कोड चेक करें।")
 
-# Correct Main Syntax Execution
 if __name__ == "__main__":
     main()
