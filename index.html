@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mobile IC Checker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+    .container { width: 100%; max-width: 480px; }
+    h1 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; color: #38bdf8; }
+    .subtitle { text-align: center; color: #94a3b8; margin-bottom: 30px; font-size: 0.95rem; }
+    .search-box { background: #1e293b; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+    input { width: 100%; padding: 16px; font-size: 1.1rem; border: 2px solid #334155; border-radius: 12px; background: #0f172a; color: white; outline: none; }
+    input:focus { border-color: #38bdf8; }
+    button { width: 100%; margin-top: 14px; padding: 16px; font-size: 1.1rem; font-weight: 600; background: #0ea5e9; color: white; border: none; border-radius: 12px; cursor: pointer; }
+    button:active { background: #0284c7; }
+    .result { margin-top: 25px; background: #1e293b; border-radius: 16px; padding: 20px; display: none; }
+    .result.show { display: block; }
+    .ic-code { font-size: 1.4rem; font-weight: 700; color: #38bdf8; margin-bottom: 8px; }
+    .brand { display: inline-block; background: #22c55e; color: #052e16; font-size: 0.8rem; padding: 3px 10px; border-radius: 20px; margin-left: 8px; }
+    .info { margin-top: 12px; line-height: 1.7; }
+    .info span { color: #94a3b8; }
+    .not-found { color: #f87171; text-align: center; padding: 20px; }
+    .examples { margin-top: 30px; font-size: 0.85rem; color: #64748b; text-align: center; }
+    .examples span { display: inline-block; background: #1e293b; padding: 4px 10px; border-radius: 8px; margin: 4px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Mobile IC Checker</h1>
+    <p class="subtitle">IC Code डालो → Storage Capacity पता करो</p>
+
+    <div class="search-box">
+      <input type="text" id="icInput" placeholder="उदाहरण: 32EMCP16" autocomplete="off" />
+      <button onclick="checkIC()">Check IC</button>
+    </div>
+
+    <div class="result" id="resultBox"></div>
+
+    <div class="examples">
+      <p>कुछ उदाहरण (क्लिक करके ट्राई करो):</p>
+      <span onclick="fillExample('32EMCP16')">32EMCP16</span>
+      <span onclick="fillExample('KLMAG2GE4A')">KLMAG2GE4A</span>
+      <span onclick="fillExample('MTFC32GAKAEEA')">MTFC32GAKAEEA</span>
+      <span onclick="fillExample('H26M64002EMR')">H26M64002EMR</span>
+    </div>
+  </div>
+
+  <script>
+    // ====================== DATABASE ======================
+    // यहाँ और कोड जोड़ सकते हो। जितना बड़ा database होगा उतना अच्छा।
+    const icDatabase = {
+      // Samsung examples
+      "32EMCP16": { brand: "Samsung", storage: "32 GB", ram: "2 GB", type: "eMCP" },
+      "KLMAG2GE4A": { brand: "Samsung", storage: "16 GB", ram: "-", type: "eMMC" },
+      "KLMBG2GE4A": { brand: "Samsung", storage: "32 GB", ram: "-", type: "eMMC" },
+      "KLMCG2GE4A": { brand: "Samsung", storage: "64 GB", ram: "-", type: "eMMC" },
+      "KLMDG2GE4A": { brand: "Samsung", storage: "128 GB", ram: "-", type: "eMMC" },
+      "KLMAG1JETD": { brand: "Samsung", storage: "16 GB", ram: "-", type: "eMMC" },
+      "KLMBG2JETD": { brand: "Samsung", storage: "32 GB", ram: "-", type: "eMMC" },
+
+      // Micron examples
+      "MTFC32GAKAEEA": { brand: "Micron", storage: "32 GB", ram: "-", type: "eMMC" },
+      "MTFC16GAKAEEA": { brand: "Micron", storage: "16 GB", ram: "-", type: "eMMC" },
+      "MTFC64GAKAEEA": { brand: "Micron", storage: "64 GB", ram: "-", type: "eMMC" },
+      "MTFC8GAKAEEA": { brand: "Micron", storage: "8 GB", ram: "-", type: "eMMC" },
+
+      // SK Hynix examples
+      "H26M64002EMR": { brand: "SK Hynix", storage: "64 GB", ram: "-", type: "eMMC" },
+      "H26M52002EMR": { brand: "SK Hynix", storage: "32 GB", ram: "-", type: "eMMC" },
+      "H26M41001HPR": { brand: "SK Hynix", storage: "8 GB", ram: "-", type: "eMMC" },
+
+      // कुछ और common codes (आप और जोड़ सकते हो)
+      "08EMCP04": { brand: "Kingston", storage: "8 GB", ram: "4 Gb", type: "eMCP" },
+      "16EMCP08": { brand: "Kingston", storage: "16 GB", ram: "8 Gb", type: "eMCP" },
+      "32EMCP16": { brand: "Samsung", storage: "32 GB", ram: "2 GB", type: "eMCP" }
+    };
+
+    // ====================== MAIN FUNCTION ======================
+    function checkIC() {
+      const input = document.getElementById("icInput").value.trim().toUpperCase();
+      const resultBox = document.getElementById("resultBox");
+
+      if (!input) {
+        resultBox.innerHTML = <div class="not-found">कृपया IC Code डालें</div>;
+        resultBox.classList.add("show");
+        return;
+      }
+
+      // Exact match
+      let found = icDatabase[input];
+
+      // अगर exact नहीं मिला तो partial match try करो
+      if (!found) {
+        for (let code in icDatabase) {
+          if (code.includes(input) || input.includes(code)) {
+            found = icDatabase[code];
+            break;
+          }
+        }
+      }
+
+      if (found) {
+        resultBox.innerHTML = `
+          <div class="ic-code">\( {input} <span class="brand"> \){found.brand}</span></div>
+          <div class="info">
+            <div><span>Storage:</span> <strong>${found.storage}</strong></div>
+            <div><span>RAM:</span> ${found.ram}</div>
+            <div><span>Type:</span> ${found.type}</div>
+          </div>
+        `;
+      } else {
+        resultBox.innerHTML = `
+          <div class="not-found">
+            <strong>${input}</strong><br>
+            Database में नहीं मिला।<br>
+            आप database में नया code जोड़ सकते हो।
+          </div>
+        `;
+      }
+
+      resultBox.classList.add("show");
+    }
+
+    // Enter key से भी सर्च हो
+    document.getElementById("icInput").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") checkIC();
+    });
+
+    function fillExample(code) {
+      document.getElementById("icInput").value = code;
+      checkIC();
+    }
+  </script>
+</body>
+</html>
