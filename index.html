@@ -2,136 +2,358 @@
 <html lang="hi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mobile IC Checker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>BoardCheck Pro</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-    body { background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-    .container { width: 100%; max-width: 480px; }
-    h1 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; color: #38bdf8; }
-    .subtitle { text-align: center; color: #94a3b8; margin-bottom: 30px; font-size: 0.95rem; }
-    .search-box { background: #1e293b; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-    input { width: 100%; padding: 16px; font-size: 1.1rem; border: 2px solid #334155; border-radius: 12px; background: #0f172a; color: white; outline: none; }
-    input:focus { border-color: #38bdf8; }
-    button { width: 100%; margin-top: 14px; padding: 16px; font-size: 1.1rem; font-weight: 600; background: #0ea5e9; color: white; border: none; border-radius: 12px; cursor: pointer; }
-    button:active { background: #0284c7; }
-    .result { margin-top: 25px; background: #1e293b; border-radius: 16px; padding: 20px; display: none; }
-    .result.show { display: block; }
-    .ic-code { font-size: 1.4rem; font-weight: 700; color: #38bdf8; margin-bottom: 8px; }
-    .brand { display: inline-block; background: #22c55e; color: #052e16; font-size: 0.8rem; padding: 3px 10px; border-radius: 20px; margin-left: 8px; }
-    .info { margin-top: 12px; line-height: 1.7; }
-    .info span { color: #94a3b8; }
-    .not-found { color: #f87171; text-align: center; padding: 20px; }
-    .examples { margin-top: 30px; font-size: 0.85rem; color: #64748b; text-align: center; }
-    .examples span { display: inline-block; background: #1e293b; padding: 4px 10px; border-radius: 8px; margin: 4px; cursor: pointer; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    body {
+      background: #070b14;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 20px 16px;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
+    }
+
+    .container {
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+      padding-top: 8px;
+    }
+
+    .logo {
+      font-size: 26px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #38bdf8, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .tagline {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 5px;
+      letter-spacing: 1px;
+    }
+
+    .search-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    input {
+      width: 100%;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 500;
+      background: #0f172a;
+      border: 1.5px solid #1e293b;
+      border-radius: 14px;
+      color: #f1f5f9;
+      outline: none;
+      transition: 0.2s;
+    }
+
+    input:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15);
+    }
+
+    input::placeholder {
+      color: #475569;
+    }
+
+    .btn {
+      width: 100%;
+      margin-top: 12px;
+      padding: 15px;
+      font-size: 16px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #0ea5e9, #6366f1);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+
+    .result-card {
+      margin-top: 22px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 20px;
+      padding: 20px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .result-card.show {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .brand-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #052e16;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+      letter-spacing: 0.3px;
+    }
+
+    .ic-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-bottom: 16px;
+      word-break: break-all;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .stat-box {
+      background: rgba(30, 41, 59, 0.6);
+      border-radius: 14px;
+      padding: 14px 10px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .storage { color: #fde047; }
+    .ram { color: #4ade80; }
+
+    .type-row {
+      margin-top: 14px;
+      text-align: center;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .not-found {
+      text-align: center;
+      padding: 6px 0;
+    }
+
+    .not-found h3 {
+      color: #f87171;
+      margin-bottom: 6px;
+      font-size: 17px;
+    }
+
+    .not-found p {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .note {
+      margin-top: 20px;
+      font-size: 11px;
+      color: #475569;
+      text-align: center;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Mobile IC Checker</h1>
-    <p class="subtitle">IC Code डालो → Storage Capacity पता करो</p>
-
-    <div class="search-box">
-      <input type="text" id="icInput" placeholder="उदाहरण: 32EMCP16" autocomplete="off" />
-      <button onclick="checkIC()">Check IC</button>
+    <div class="header">
+      <div class="logo">BoardCheck Pro</div>
+      <div class="tagline">STORAGE + RAM IDENTIFIER</div>
     </div>
 
-    <div class="result" id="resultBox"></div>
+    <div class="search-card">
+      <input type="text" id="icInput" placeholder="कोई भी IC Code डालें..." autocomplete="off" />
+      <button class="btn" onclick="checkIC()">Check IC</button>
+    </div>
 
-    <div class="examples">
-      <p>कुछ उदाहरण (क्लिक करके ट्राई करो):</p>
-      <span onclick="fillExample('32EMCP16')">32EMCP16</span>
-      <span onclick="fillExample('KLMAG2GE4A')">KLMAG2GE4A</span>
-      <span onclick="fillExample('MTFC32GAKAEEA')">MTFC32GAKAEEA</span>
-      <span onclick="fillExample('H26M64002EMR')">H26M64002EMR</span>
+    <div class="result-card" id="resultCard"></div>
+
+    <div class="note">
+      पैटर्न + डेटाबेस दोनों से काम करता है।<br>
+      जितना बड़ा डेटाबेस होगा उतना सटीक रिजल्ट मिलेगा।
     </div>
   </div>
 
   <script>
-    // ====================== DATABASE ======================
-    // यहाँ और कोड जोड़ सकते हो। जितना बड़ा database होगा उतना अच्छा।
-    const icDatabase = {
-      // Samsung examples
+    // ========== DATABASE ==========
+    const db = {
+      "H9TQ26ADFTAC": { brand: "SK Hynix", storage: "32 GB", ram: "3 GB", type: "eMCP" },
       "32EMCP16": { brand: "Samsung", storage: "32 GB", ram: "2 GB", type: "eMCP" },
       "KLMAG2GE4A": { brand: "Samsung", storage: "16 GB", ram: "-", type: "eMMC" },
       "KLMBG2GE4A": { brand: "Samsung", storage: "32 GB", ram: "-", type: "eMMC" },
       "KLMCG2GE4A": { brand: "Samsung", storage: "64 GB", ram: "-", type: "eMMC" },
       "KLMDG2GE4A": { brand: "Samsung", storage: "128 GB", ram: "-", type: "eMMC" },
-      "KLMAG1JETD": { brand: "Samsung", storage: "16 GB", ram: "-", type: "eMMC" },
-      "KLMBG2JETD": { brand: "Samsung", storage: "32 GB", ram: "-", type: "eMMC" },
-
-      // Micron examples
       "MTFC32GAKAEEA": { brand: "Micron", storage: "32 GB", ram: "-", type: "eMMC" },
       "MTFC16GAKAEEA": { brand: "Micron", storage: "16 GB", ram: "-", type: "eMMC" },
       "MTFC64GAKAEEA": { brand: "Micron", storage: "64 GB", ram: "-", type: "eMMC" },
       "MTFC8GAKAEEA": { brand: "Micron", storage: "8 GB", ram: "-", type: "eMMC" },
-
-      // SK Hynix examples
       "H26M64002EMR": { brand: "SK Hynix", storage: "64 GB", ram: "-", type: "eMMC" },
       "H26M52002EMR": { brand: "SK Hynix", storage: "32 GB", ram: "-", type: "eMMC" },
-      "H26M41001HPR": { brand: "SK Hynix", storage: "8 GB", ram: "-", type: "eMMC" },
-
-      // कुछ और common codes (आप और जोड़ सकते हो)
-      "08EMCP04": { brand: "Kingston", storage: "8 GB", ram: "4 Gb", type: "eMCP" },
-      "16EMCP08": { brand: "Kingston", storage: "16 GB", ram: "8 Gb", type: "eMCP" },
-      "32EMCP16": { brand: "Samsung", storage: "32 GB", ram: "2 GB", type: "eMCP" }
+      "H9TQ17ABJTMC": { brand: "SK Hynix", storage: "16 GB", ram: "2 GB", type: "eMCP" },
+      "KM8V8001CM": { brand: "Samsung", storage: "128 GB", ram: "6 GB", type: "uMCP" },
+      "KM2V8001CM": { brand: "Samsung", storage: "128 GB", ram: "6 GB", type: "uMCP" }
     };
 
-    // ====================== MAIN FUNCTION ======================
-    function checkIC() {
-      const input = document.getElementById("icInput").value.trim().toUpperCase();
-      const resultBox = document.getElementById("resultBox");
+    // ========== PATTERN DETECTION ==========
+    function detectByPattern(code) {
+      code = code.toUpperCase();
 
-      if (!input) {
-        resultBox.innerHTML = <div class="not-found">कृपया IC Code डालें</div>;
-        resultBox.classList.add("show");
+      // Micron MTFC
+      if (code.startsWith("MTFC")) {
+        const match = code.match(/MTFC(\d+)G/);
+        if (match) {
+          return {
+            brand: "Micron",
+            storage: match[1] + " GB",
+            ram: "-",
+            type: "eMMC / UFS",
+            note: "Pattern से पहचाना गया"
+          };
+        }
+      }
+
+      // Samsung KLM
+      if (code.startsWith("KLM")) {
+        if (code.includes("AG1") || code.includes("AG2") || code.includes("8G")) {
+          return { brand: "Samsung", storage: "8-16 GB", ram: "-", type: "eMMC", note: "Pattern अनुमान" };
+        }
+        if (code.includes("BG") || code.includes("2G")) {
+          return { brand: "Samsung", storage: "32 GB", ram: "-", type: "eMMC", note: "Pattern अनुमान" };
+        }
+        if (code.includes("CG") || code.includes("4G")) {
+          return { brand: "Samsung", storage: "64 GB", ram: "-", type: "eMMC", note: "Pattern अनुमान" };
+        }
+        if (code.includes("DG")) {
+          return { brand: "Samsung", storage: "128 GB", ram: "-", type: "eMMC", note: "Pattern अनुमान" };
+        }
+      }
+
+      // SK Hynix H26M
+      if (code.startsWith("H26M")) {
+        if (code.includes("4")) return { brand: "SK Hynix", storage: "8 GB", ram: "-", type: "eMMC", note: "Pattern अनुमान" };
+        if (code.includes("5")) return { brand: "SK Hynix", storage: "16 GB", ram: "-", type: "eMMC", note: "Pattern अनुमान" };
+        if (code.includes("6")) return { brand: "SK Hynix", storage: "32 GB", ram: "-", type: "eMMC", note: "Pattern अनुमान" };
+        if (code.includes("7") || code.includes("8")) return { brand: "SK Hynix", storage: "64 GB", ram: "-", type: "eMMC", note: "Pattern अनुमान" };
+      }
+
+      return null;
+    }
+
+    function checkIC() {
+      const raw = document.getElementById("icInput").value.trim().toUpperCase();
+      const card = document.getElementById("resultCard");
+
+      if (!raw) {
+        card.innerHTML = `
+          <div class="not-found">
+            <h3>IC Code डालें</h3>
+            <p>ऊपर बॉक्स में कोड लिखकर Check दबाएँ</p>
+          </div>`;
+        card.classList.add("show");
         return;
       }
 
-      // Exact match
-      let found = icDatabase[input];
+      // 1. Exact match
+      let data = db[raw];
 
-      // अगर exact नहीं मिला तो partial match try करो
-      if (!found) {
-        for (let code in icDatabase) {
-          if (code.includes(input) || input.includes(code)) {
-            found = icDatabase[code];
+      // 2. Partial match
+      if (!data) {
+        for (let key in db) {
+          if (key.includes(raw) || raw.includes(key)) {
+            data = db[key];
             break;
           }
         }
       }
 
-      if (found) {
-        resultBox.innerHTML = `
-          <div class="ic-code">\( {input} <span class="brand"> \){found.brand}</span></div>
-          <div class="info">
-            <div><span>Storage:</span> <strong>${found.storage}</strong></div>
-            <div><span>RAM:</span> ${found.ram}</div>
-            <div><span>Type:</span> ${found.type}</div>
-          </div>
-        `;
-      } else {
-        resultBox.innerHTML = `
-          <div class="not-found">
-            <strong>${input}</strong><br>
-            Database में नहीं मिला।<br>
-            आप database में नया code जोड़ सकते हो।
-          </div>
-        `;
+      // 3. Pattern detection
+      if (!data) {
+        data = detectByPattern(raw);
       }
 
-      resultBox.classList.add("show");
+      if (data) {
+        card.innerHTML = `
+          <div class="brand-badge">${data.brand}</div>
+          <div class="ic-name">${raw}</div>
+          <div class="stats">
+            <div class="stat-box">
+              <div class="stat-label">Storage</div>
+              <div class="stat-value storage">${data.storage}</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">RAM</div>
+              <div class="stat-value ram">${data.ram || "-"}</div>
+            </div>
+          </div>
+          <div class="type-row">Type: <strong style="color:#94a3b8">${data.type}</strong></div>
+          \( {data.note ? <div style="margin-top:12px; font-size:11px; color:#64748b; text-align:center;"> \){data.note}</div> : ""}
+        `;
+      } else {
+        card.innerHTML = `
+          <div class="not-found">
+            <h3>कोड नहीं मिला</h3>
+            <p><strong>${raw}</strong><br><br>
+            यह कोड अभी डेटाबेस या पैटर्न में नहीं है।<br>
+            आप Google में सर्च करके चेक कर सकते हो।</p>
+          </div>`;
+      }
+
+      card.classList.add("show");
     }
 
-    // Enter key से भी सर्च हो
+    // Enter key support
     document.getElementById("icInput").addEventListener("keypress", function(e) {
       if (e.key === "Enter") checkIC();
     });
-
-    function fillExample(code) {
-      document.getElementById("icInput").value = code;
-      checkIC();
-    }
   </script>
 </body>
 </html>
