@@ -1,66 +1,78 @@
 import streamlit as st
 import re
 
+# 1. Page Configuration
 st.set_page_config(
-    page_title="PRO IC DECODER", 
+    page_title="IC SPEC FINDER PRO", 
     page_icon="⚡", 
     layout="centered"
 )
 
+# 2. Modern CSS Styling
 st.markdown("""
     <style>
     .stApp {
-        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+        background-color: #0f172a;
         font-family: 'Segoe UI', Roboto, sans-serif;
     }
-    .main-title {
-        font-size: 40px !important;
-        font-weight: 900 !important;
+    
+    /* Main Title */
+    .title-text {
+        font-size: 38px;
+        font-weight: 900;
         text-align: center;
-        background: linear-gradient(90deg, #38bdf8, #818cf8, #c084fc);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-transform: uppercase;
+        color: #38bdf8;
         letter-spacing: 2px;
-        margin-bottom: 5px;
+        margin-bottom: 0px;
     }
-    .sub-title {
-        font-size: 15px;
+    .sub-text {
+        font-size: 14px;
         text-align: center;
         color: #94a3b8;
         margin-bottom: 25px;
-        font-weight: 500;
     }
-    .stTextInput label {
-        color: #38bdf8 !important;
+
+    /* Big Action Button */
+    .stButton>button {
+        width: 100%;
+        background: linear-gradient(90deg, #0284c7 0%, #6366f1 100%) !important;
+        color: white !important;
         font-size: 18px !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important;
+        padding: 12px 20px !important;
+        border-radius: 10px !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
         letter-spacing: 1px;
     }
+    .stButton>button:hover {
+        background: linear-gradient(90deg, #0369a1 0%, #4f46e5 100%) !important;
+        box-shadow: 0 6px 20px rgba(2, 132, 199, 0.6);
+    }
+
+    /* Input Field */
     .stTextInput input {
-        font-size: 22px !important;
+        font-size: 20px !important;
         font-weight: 800 !important;
-        color: #ffffff !important;
-        background-color: rgba(30, 41, 59, 0.7) !important;
+        color: #38bdf8 !important;
+        background-color: #1e293b !important;
         border: 2px solid #38bdf8 !important;
-        border-radius: 12px !important;
-        padding: 12px 15px !important;
-        box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+        border-radius: 10px !important;
         text-transform: uppercase;
+        text-align: center;
     }
-    .stTextInput input:focus {
-        border-color: #818cf8 !important;
-        box-shadow: 0 0 25px rgba(129, 140, 248, 0.5) !important;
-    }
+
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">⚡ IC SPEC FINDER PRO</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Instant Smart Chip Specs Decoder for Mobile Repairing</div>', unsafe_allow_html=True)
+# 3. Header Section
+st.markdown('<div class="title-text">⚡ IC SPEC FINDER PRO</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-text">Professional Mobile IC Hardware Decoder</div>', unsafe_allow_html=True)
 
+# 4. Master Database
 EXACT_IC_DB = {
     "H9TQ15ADFTMC": ("2 GB LPDDR3", "16 GB eMMC", "SK HYNIX"),
     "H9TQ16ADFTMC": ("2 GB LPDDR3", "16 GB eMMC", "SK HYNIX"),
@@ -87,6 +99,7 @@ EXACT_IC_DB = {
     "SDINBDG464G": ("No RAM", "64 GB eMMC", "SANDISK")
 }
 
+# 5. Decoder Logic
 def master_decode_ic(code):
     clean = code.upper().replace("-", "").strip()
     if not clean:
@@ -147,58 +160,25 @@ def master_decode_ic(code):
 
     return brand, ram, storage
 
-user_input = st.text_input("ENTER IC PART CODE:", placeholder="e.g. H9TQ15ADFTMC, KMRP60014M...")
+# 6. User Input & Button
+user_input = st.text_input("IC PART NUMBER DALEIN:", placeholder="e.g. H9TQ26ADFTAC, KMRP60014M...")
+click_search = st.button("🔍 DECODE IC SPECS NOW")
 
-if user_input:
-    brand, ram, storage = master_decode_ic(user_input)
-    
-    result_card = f"""
-    <div style="
-        background: rgba(30, 41, 59, 0.7);
-        backdrop-filter: blur(10px);
-        border: 2px solid #818cf8;
-        border-radius: 16px;
-        padding: 25px;
-        margin-top: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(129, 140, 248, 0.2);
-    ">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <span style="
-                background: linear-gradient(90deg, #0284c7, #3b82f6);
-                color: #ffffff;
-                font-size: 14px;
-                font-weight: 800;
-                padding: 6px 16px;
-                border-radius: 20px;
-                letter-spacing: 1.5px;
-            ">BRAND: {brand}</span>
-            <h2 style="
-                color: #38bdf8;
-                font-size: 28px;
-                font-weight: 800;
-                margin: 15px 0 5px 0;
-                letter-spacing: 1px;
-            ">{user_input.upper()}</h2>
-        </div>
-
-        <div style="
-            display: flex;
-            justify-content: space-around;
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 12px;
-            padding: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        ">
-            <div style="text-align: center;">
-                <div style="color: #94a3b8; font-size: 14px; font-weight: 700; margin-bottom: 5px;">⚡ RAM CAPACITY</div>
-                <div style="color: #fde047; font-size: 26px; font-weight: 900;">{ram}</div>
-            </div>
-            <div style="border-left: 1px solid #334155;"></div>
-            <div style="text-align: center;">
-                <div style="color: #94a3b8; font-size: 14px; font-weight: 700; margin-bottom: 5px;">💾 INTERNAL STORAGE</div>
-                <div style="color: #4ade80; font-size: 26px; font-weight: 900;">{storage}</div>
-            </div>
-        </div>
-    </div>
-    """
-    st.markdown(result_card, unsafe_allow_html=True)
+# 7. Native Result UI (No Raw Code Bugs)
+if click_search or user_input:
+    if user_input.strip():
+        brand, ram, storage = master_decode_ic(user_input)
+        
+        st.divider()
+        
+        # Brand Highlight
+        st.subheader(f"🏷️ BRAND: {brand}")
+        
+        # Clean Metric Cards
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric(label="⚡ RAM CAPACITY", value=ram)
+        with col2:
+            st.metric(label="💾 INTERNAL STORAGE", value=storage)
+    else:
+        st.warning("कृपया पहले IC पार्ट कोड टाइप करें!")
