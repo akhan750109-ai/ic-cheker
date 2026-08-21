@@ -1,21 +1,18 @@
 import streamlit as st
 import re
 
-# 1. Page Config
 st.set_page_config(
     page_title="PRO IC DECODER", 
     page_icon="⚡", 
     layout="centered"
 )
 
-# 2. Modern UI CSS Styling
 st.markdown("""
     <style>
     .stApp {
         background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
         font-family: 'Segoe UI', Roboto, sans-serif;
     }
-    
     .main-title {
         font-size: 40px !important;
         font-weight: 900 !important;
@@ -27,7 +24,6 @@ st.markdown("""
         letter-spacing: 2px;
         margin-bottom: 5px;
     }
-    
     .sub-title {
         font-size: 15px;
         text-align: center;
@@ -35,7 +31,6 @@ st.markdown("""
         margin-bottom: 25px;
         font-weight: 500;
     }
-
     .stTextInput label {
         color: #38bdf8 !important;
         font-size: 18px !important;
@@ -57,20 +52,16 @@ st.markdown("""
         border-color: #818cf8 !important;
         box-shadow: 0 0 25px rgba(129, 140, 248, 0.5) !important;
     }
-
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Header Section
 st.markdown('<div class="main-title">⚡ IC SPEC FINDER PRO</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">Instant Smart Chip Specs Decoder for Mobile Repairing</div>', unsafe_allow_html=True)
 
-# 4. Master Exact Database
 EXACT_IC_DB = {
-    # SK Hynix
     "H9TQ15ADFTMC": ("2 GB LPDDR3", "16 GB eMMC", "SK HYNIX"),
     "H9TQ16ADFTMC": ("2 GB LPDDR3", "16 GB eMMC", "SK HYNIX"),
     "H9TQ17ABJTAC": ("2 GB LPDDR3", "16 GB eMMC", "SK HYNIX"),
@@ -79,8 +70,6 @@ EXACT_IC_DB = {
     "H54T1A20AFR": ("6 GB LPDDR4X", "128 GB uMCP", "SK HYNIX"),
     "H58T52ACACR": ("4 GB LPDDR4X", "64 GB uMCP", "SK HYNIX"),
     "H58T27ACACR": ("8 GB LPDDR4X", "256 GB uMCP", "SK HYNIX"),
-
-    # Samsung
     "KMRP60014M": ("3 GB LPDDR3", "32 GB eMMC", "SAMSUNG"),
     "KMRP60014BM": ("4 GB LPDDR4X", "64 GB eMMC", "SAMSUNG"),
     "KM60014": ("3 GB LPDDR3", "32 GB eMMC", "SAMSUNG"),
@@ -91,8 +80,6 @@ EXACT_IC_DB = {
     "KMGD6001BM": ("4 GB LPDDR4X", "64 GB uMCP", "SAMSUNG"),
     "KMDX60018M": ("8 GB LPDDR5", "128 GB uMCP", "SAMSUNG"),
     "KM2V7001CM": ("8 GB LPDDR5", "256 GB uMCP", "SAMSUNG"),
-
-    # Micron & Others
     "JZ150": ("3 GB LPDDR3", "32 GB eMMC", "MICRON"),
     "NW813": ("4 GB LPDDR4X", "64 GB eMMC", "MICRON"),
     "NW814": ("6 GB LPDDR4X", "128 GB uMCP", "MICRON"),
@@ -100,18 +87,15 @@ EXACT_IC_DB = {
     "SDINBDG464G": ("No RAM", "64 GB eMMC", "SANDISK")
 }
 
-# 5. Hybrid Decoder Engine
 def master_decode_ic(code):
     clean = code.upper().replace("-", "").strip()
     if not clean:
         return None, None, None
 
-    # Layer 1: Direct Master DB Match
     if clean in EXACT_IC_DB:
         ram, storage, brand = EXACT_IC_DB[clean]
         return brand, ram, storage
 
-    # Sub-string DB Search
     for key in EXACT_IC_DB:
         if key in clean or clean in key:
             ram, storage, brand = EXACT_IC_DB[key]
@@ -121,8 +105,6 @@ def master_decode_ic(code):
     ram = "Unknown"
     storage = "Unknown"
 
-    # Layer 2: Rule-Based Logic
-    # --- SK HYNIX ---
     if clean.startswith(("H9", "H5")):
         brand = "SK HYNIX"
         if any(x in clean for x in ["15A", "16A", "17A", "15", "16", "17"]):
@@ -136,7 +118,6 @@ def master_decode_ic(code):
         elif any(x in clean for x in ["2A2", "2A"]):
             ram, storage = "8 GB LPDDR5", "256 GB uMCP"
 
-    # --- SAMSUNG ---
     elif clean.startswith("KM"):
         brand = "SAMSUNG"
         if "60014BM" in clean or "60014B" in clean:
@@ -150,14 +131,12 @@ def master_decode_ic(code):
         elif "7500" in clean or "F750" in clean:
             ram, storage = "2 GB LPDDR3", "16 GB eMMC"
 
-    # --- MICRON ---
     elif clean.startswith(("JZ", "NW", "MT")):
         brand = "MICRON"
         if "150" in clean: ram, storage = "3 GB LPDDR3", "32 GB eMMC"
         elif "813" in clean: ram, storage = "4 GB LPDDR4X", "64 GB eMMC"
         elif "814" in clean: ram, storage = "6 GB LPDDR4X", "128 GB uMCP"
 
-    # Layer 3: Fallback Regex for Unseen Codes
     if storage == "Unknown":
         match = re.search(r'(16|32|64|128|256|512)', clean)
         if match:
@@ -168,10 +147,8 @@ def master_decode_ic(code):
 
     return brand, ram, storage
 
-# 6. User Input Section
 user_input = st.text_input("ENTER IC PART CODE:", placeholder="e.g. H9TQ15ADFTMC, KMRP60014M...")
 
-# 7. UI Display Card
 if user_input:
     brand, ram, storage = master_decode_ic(user_input)
     
