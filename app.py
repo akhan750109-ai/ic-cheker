@@ -1,11 +1,10 @@
 import streamlit as st
 import re
-import os
 
-# Page Config
+# Page Configuration
 st.set_page_config(page_title="IC SPEC FINDER PRO", page_icon="⚡", layout="centered")
 
-# Styling
+# Visual Styling
 st.markdown("""
     <style>
     .stApp { background-color: #0f172a; font-family: 'Segoe UI', sans-serif; }
@@ -27,84 +26,131 @@ st.markdown("""
 st.markdown('<div class="title-text">⚡ IC SPEC FINDER PRO</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-text">Mobile IC Hardware Specification Decoder</div>', unsafe_allow_html=True)
 
-# Custom Parser for your ic_database.py file
+# ----------------------------------------------------
+# DIRECT EMBEDDED DATABASE (No External File Needed)
+# ----------------------------------------------------
+RAW_DATABASE_TEXT = """
+THGAF4G9N4LBAIR 128GB - UFS 2.1 Toshiba / Kioxia 254FBGA
+THGBMHT0CBLBAIG 128GB - eMMC 5.1 Toshiba / Kioxia 153FBGA
+THGAF8G9T43BAIR 256GB - UFS 3.1 Toshiba / Kioxia 254FBGA
+H9TQ64ABJTMC 128GB 4GB eMCP (eMMC+LPDDR4) SK Hynix 169FBGA
+H9HP52ACPMMDAR 64GB 4GB eMCP (eMMC+LPDDR4X) SK Hynix 169FBGA
+H9TQ52ACLTMC 64GB 4GB eMCP (eMMC+LPDDR4) SK Hynix 169FBGA
+KMR5B0001M 64GB 4GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMRC10014M 64GB 4GB eMCP (eMMC+LPDDR4) Samsung (SEC) 169FBGA
+KMRH60014A 64GB 4GB eMCP (eMMC+LPDDR4) Samsung (SEC) 169FBGA
+NW643 64GB 4GB eMCP (eMMC+LPDDR4) Micron 169FBGA
+H9TP32A8JDAC 32GB 2GB eMCP (eMMC+LPDDR2) SK Hynix 169FBGA
+H9TQ26AAETMC 32GB 2GB eMCP (eMMC+LPDDR3) SK Hynix 169FBGA
+H9TQ26ACLMTA 32GB 4GB eMCP (eMMC+LPDDR3) SK Hynix 169FBGA
+H9TQ26ADFTBCUR 32GB 3GB eMCP (eMMC+LPDDR3) SK Hynix 169FBGA
+H9TQ26ADFTAC 32GB 3GB eMCP (eMMC+LPDDR3) SK Hynix 169FBGA
+H9TQ27ADFTMC 32GB 3GB eMCP (eMMC+LPDDR4) SK Hynix 169FBGA
+KMQ210013M 32GB 2GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMQ72000SM 32GB 2GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMQ7X0013M 32GB 2GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMR4B0001M 32GB 3GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMRH60014M 32GB 3GB eMCP (eMMC+LPDDR4) Samsung (SEC) 169FBGA
+KMRX1000BM 32GB 2GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+NW640 32GB 3GB eMCP (eMMC+LPDDR4) Micron 169FBGA
+SDIN9DW4-32G 32GB 2GB eMCP (eMMC+LPDDR3) SanDisk / WD 169FBGA
+THGBMBG8D4KBAIR 32GB 2GB uMCP (eMMC+LPDDR3) Toshiba / Kioxia 169FBGA
+H9HP19ABUMMDAR 16GB 2GB eMCP (eMMC+LPDDR4X) SK Hynix 169FBGA
+H9TP17A8JDAC 16GB 2GB eMCP (eMMC+LPDDR2) SK Hynix 169FBGA
+H9TQ17ABJTMC 16GB 2GB eMCP (eMMC+LPDDR4) SK Hynix 169FBGA
+H9TQ17ADFTMCUR 16GB 3GB eMCP (eMMC+LPDDR3) SK Hynix 169FBGA
+KLMEG8UCTA 64GB - Pure eMMC 5.1 Samsung (SEC) 153FBGA
+KLMEG8U1EM 64GB - Pure eMMC 5.1 Samsung (SEC) 153FBGA
+KLMCG2KCTA 64GB - Pure eMMC 5.1 Samsung (SEC) 153FBGA
+KLMBG2JETD 32GB - Pure eMMC 5.1 Samsung (SEC) 153FBGA
+KLMDG4U1EM 128GB - Pure eMMC 5.1 Samsung (SEC) 153FBGA
+KLUDG4U1EA 128GB - Pure UFS 2.1 Samsung (SEC) 153FBGA
+KLUCG2KCTA 64GB - Pure UFS 2.1 Samsung (SEC) 153FBGA
+KLUFG8RHCF 512GB - Pure UFS 3.1 Samsung (SEC) 153FBGA
+"""
+
 @st.cache_data
-def load_ic_database():
+def build_database():
     db = {}
-    db_filename = "ic_database.py"
-    
-    if not os.path.exists(db_filename):
-        return db
-
-    with open(db_filename, "r", encoding="utf-8", errors="ignore") as f:
-        for line in f:
-            clean_line = line.strip()
-            # Skip empty lines or header/comment lines
-            if not clean_line or clean_line.startswith("#") or "IC Code" in clean_line:
-                continue
-            
-            # Split line by spaces or tabs
-            parts = clean_line.split()
-            if len(parts) >= 2:
-                # The first word is always the IC Part Code
-                ic_code = parts[0].strip().upper().replace('"', '').replace("'", "").replace(",", "")
-                rest_of_line = " ".join(parts[1:])
-                db[ic_code] = rest_of_line
-
+    lines = RAW_DATABASE_TEXT.strip().split("\n")
+    for line in lines:
+        clean = line.strip()
+        if not clean:
+            continue
+        parts = clean.split()
+        if len(parts) >= 2:
+            code = parts[0].upper().replace('"', '').replace("'", "").strip()
+            rest = " ".join(parts[1:])
+            db[code] = rest
     return db
 
-IC_DB = load_ic_database()
+IC_DB = build_database()
 
-# Exact Search & Specs Extraction
-def find_ic_specs(user_input):
-    clean_input = user_input.strip().upper().replace("-", "")
-    if not clean_input:
+# Core IC Search Function
+def search_ic(user_code):
+    clean = user_code.strip().upper().replace("-", "")
+    if not clean:
         return None, None, None
 
-    # Search in Parsed File Database
-    if clean_input in IC_DB:
-        row_text = IC_DB[clean_input]
-        
-        # 1. Extract Storage (e.g. 32GB, 64GB, 128GB, 256GB)
-        storage_match = re.search(r'(\d+\s*GB|\d+\s*TB)', row_text, re.IGNORECASE)
-        storage = storage_match.group(1).upper() if storage_match else "Storage Not Mentioned"
-        
-        # 2. Extract RAM (e.g. 2GB, 3GB, 4GB, 6GB, 8GB)
-        # Search specifically near RAM keywords or secondary GB match
-        gb_matches = re.findall(r'(\d+\s*GB)', row_text, re.IGNORECASE)
-        if len(gb_matches) >= 2:
-            ram = gb_matches[1].upper()
-        elif "NO RAM" in row_text.upper() or "PURE FLASH" in row_text.upper():
-            ram = "No RAM (Pure Flash)"
-        else:
-            ram_match = re.search(r'(\d+\s*GB)\s*(?:RAM|eMCP|uMCP|LPDDR)?', row_text, re.IGNORECASE)
-            ram = ram_match.group(1).upper() if ram_match else "No RAM / Check Details"
+    # Step 1: Direct Database Search
+    matched_text = None
+    if clean in IC_DB:
+        matched_text = IC_DB[clean]
+    else:
+        # Partial Match (Prefix search)
+        for key in IC_DB:
+            if key in clean or clean in key:
+                matched_text = IC_DB[key]
+                break
 
-        # 3. Extract Manufacturer / Brand
+    if matched_text:
+        row_upper = matched_text.upper()
+
+        # 1. Extract Brand
         brand = "GENERIC / OTHER"
-        row_upper = row_text.upper()
-        if "SK HYNIX" in row_upper or "HYNIX" in row_upper:
-            brand = "SK HYNIX"
-        elif "SAMSUNG" in row_upper or "SEC" in row_upper:
-            brand = "SAMSUNG (SEC)"
-        elif "MICRON" in row_upper:
-            brand = "MICRON"
-        elif "TOSHIBA" in row_upper or "KIOXIA" in row_upper:
-            brand = "TOSHIBA / KIOXIA"
-        elif "SANDISK" in row_upper:
-            brand = "SANDISK"
+        if "SK HYNIX" in row_upper or "HYNIX" in row_upper: brand = "SK HYNIX"
+        elif "SAMSUNG" in row_upper or "SEC" in row_upper: brand = "SAMSUNG (SEC)"
+        elif "MICRON" in row_upper: brand = "MICRON"
+        elif "TOSHIBA" in row_upper or "KIOXIA" in row_upper: brand = "TOSHIBA / KIOXIA"
+        elif "SANDISK" in row_upper or "WD" in row_upper: brand = "SANDISK"
 
+        # 2. Extract Storage & RAM
+        gb_matches = re.findall(r'(\d+\s*GB|\d+\s*TB)', matched_text, re.IGNORECASE)
+        
+        if len(gb_matches) >= 2:
+            storage = gb_matches[0].upper()
+            ram = gb_matches[1].upper()
+        elif len(gb_matches) == 1:
+            storage = gb_matches[0].upper()
+            if "PURE" in row_upper or "EMMC" in row_upper or "UFS" in row_upper:
+                ram = "No RAM (Pure Flash Storage)"
+            else:
+                ram = "RAM Not Specified"
+        else:
+            storage = "Unknown Storage"
+            ram = "Unknown RAM"
+
+        return brand, ram, storage
+
+    # Step 2: Algorithmic Fallback for Samsung Pure Flash (e.g. KLMEG8UCTA)
+    if clean.startswith("KL"):
+        brand = "SAMSUNG (SEC)"
+        ram = "No RAM (Pure Flash Storage)"
+        if "8" in clean or "64" in clean: storage = "64 GB"
+        elif "4" in clean or "128" in clean: storage = "128 GB"
+        elif "2" in clean or "32" in clean: storage = "32 GB"
+        else: storage = "eMMC / UFS Storage"
         return brand, ram, storage
 
     return "NOT IN DATABASE", "Code Not Listed", "Code Not Listed"
 
 # UI Layout
-user_input = st.text_input("IC PART NUMBER DALEIN:", placeholder="e.g. H9TQ26ADFTBCUR, KMR5B0001M, THGAF4G9N4LBAIR...")
+user_input = st.text_input("IC PART NUMBER DALEIN:", placeholder="e.g. KLMEG8UCTA, H9TQ26ADFTAC...")
 click_search = st.button("🔍 DECODE IC SPECS NOW")
 
 if click_search or user_input:
     if user_input.strip():
-        brand, ram, storage = find_ic_specs(user_input)
+        brand, ram, storage = search_ic(user_input)
         st.divider()
         st.subheader(f"🏷️ BRAND: {brand}")
         col1, col2 = st.columns(2)
