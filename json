@@ -1,0 +1,21 @@
+{
+  "short_name": "IC Spec Finder",
+  "name": "IC SPEC FINDER PRO",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/900/900782.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/900/900782.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0f172a",
+  "theme_color": "#38bdf8",
+  "display": "standalone",
+  "orientation": "portrait"
+}
