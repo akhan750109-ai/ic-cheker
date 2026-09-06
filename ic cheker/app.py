@@ -1,184 +1,366 @@
 import streamlit as st
 import re
 
-# 1. Page Configuration
-st.set_page_config(
-    page_title="IC SPEC FINDER PRO", 
-    page_icon="⚡", 
-    layout="centered"
-)
+# Page Configuration
+st.set_page_config(page_title="IC SPEC FINDER PRO", page_icon="⚡", layout="centered")
 
-# 2. Modern CSS Styling
+# Visual Styling & PWA Link Integration
 st.markdown("""
+    <head>
+        <link rel="manifest" href="/manifest.json">
+        <meta name="theme-color" content="#38bdf8">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+    </head>
     <style>
-    .stApp {
-        background-color: #0f172a;
-        font-family: 'Segoe UI', Roboto, sans-serif;
+    /* Dark Futuristic Background */
+    .stApp { 
+        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
     }
     
-    /* Main Title */
-    .title-text {
-        font-size: 38px;
-        font-weight: 900;
+    /* Header Card Styling */
+    .header-card {
+        background: rgba(30, 41, 59, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        border-radius: 16px;
+        padding: 20px;
         text-align: center;
-        color: #38bdf8;
-        letter-spacing: 2px;
-        margin-bottom: 0px;
-    }
-    .sub-text {
-        font-size: 14px;
-        text-align: center;
-        color: #94a3b8;
         margin-bottom: 25px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+    .title-text { 
+        font-size: 32px; 
+        font-weight: 900; 
+        background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 5px;
+    }
+    .sub-text { 
+        font-size: 13px; 
+        color: #94a3b8; 
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        font-weight: 600;
     }
 
-    /* Big Action Button */
+    /* Input & Button Styling */
+    .stTextInput input {
+        font-size: 18px !important; 
+        font-weight: 700 !important; 
+        color: #38bdf8 !important;
+        background-color: #0f172a !important; 
+        border: 2px solid #38bdf8 !important; 
+        border-radius: 12px !important;
+        text-align: center;
+        padding: 12px !important;
+    }
     .stButton>button {
-        width: 100%;
+        width: 100%; 
         background: linear-gradient(90deg, #0284c7 0%, #6366f1 100%) !important;
-        color: white !important;
-        font-size: 18px !important;
+        color: white !important; 
+        font-size: 16px !important; 
         font-weight: 800 !important;
-        padding: 12px 20px !important;
-        border-radius: 10px !important;
+        padding: 12px !important; 
+        border-radius: 12px !important; 
         border: none !important;
         box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
-        letter-spacing: 1px;
-    }
-    .stButton>button:hover {
-        background: linear-gradient(90deg, #0369a1 0%, #4f46e5 100%) !important;
-        box-shadow: 0 6px 20px rgba(2, 132, 199, 0.6);
+        transition: all 0.3s ease;
     }
 
-    /* Input Field */
-    .stTextInput input {
-        font-size: 20px !important;
-        font-weight: 800 !important;
-        color: #38bdf8 !important;
-        background-color: #1e293b !important;
-        border: 2px solid #38bdf8 !important;
-        border-radius: 10px !important;
-        text-transform: uppercase;
-        text-align: center;
+    /* Result Card Styling */
+    .result-card {
+        background: rgba(30, 41, 59, 0.8);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        margin-top: 20px;
     }
-
-    #MainMenu {visibility: hidden;}
+    .brand-badge {
+        background: #0284c7;
+        color: white;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-weight: 800;
+        font-size: 14px;
+        display: inline-block;
+        margin-bottom: 15px;
+    }
+    
+    #MainMenu {visibility: hidden;} 
     footer {visibility: hidden;}
-    header {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Header Section
-st.markdown('<div class="title-text">⚡ IC SPEC FINDER PRO</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-text">Professional Mobile IC Hardware Decoder</div>', unsafe_allow_html=True)
+# Header Section
+st.markdown("""
+    <div class="header-card">
+        <div class="title-text">⚡ IC SPEC FINDER PRO</div>
+        <div class="sub-text">Mobile Hardware Specification Decoder</div>
+    </div>
+""", unsafe_allow_html=True)
 
-# 4. Master Database
-EXACT_IC_DB = {
-    "H9TQ15ADFTMC": ("2 GB LPDDR3", "16 GB eMMC", "SK HYNIX"),
-    "H9TQ16ADFTMC": ("2 GB LPDDR3", "16 GB eMMC", "SK HYNIX"),
-    "H9TQ17ABJTAC": ("2 GB LPDDR3", "16 GB eMMC", "SK HYNIX"),
-    "H9TQ26ADFTAC": ("3 GB LPDDR3", "32 GB eMMC", "SK HYNIX"),
-    "H9TQ65ACRNAC": ("4 GB LPDDR3", "64 GB eMMC", "SK HYNIX"),
-    "H54T1A20AFR": ("6 GB LPDDR4X", "128 GB uMCP", "SK HYNIX"),
-    "H58T52ACACR": ("4 GB LPDDR4X", "64 GB uMCP", "SK HYNIX"),
-    "H58T27ACACR": ("8 GB LPDDR4X", "256 GB uMCP", "SK HYNIX"),
-    "KMRP60014M": ("3 GB LPDDR3", "32 GB eMMC", "SAMSUNG"),
-    "KMRP60014BM": ("4 GB LPDDR4X", "64 GB eMMC", "SAMSUNG"),
-    "KM60014": ("3 GB LPDDR3", "32 GB eMMC", "SAMSUNG"),
-    "KMDH6001DA": ("3 GB LPDDR4X", "32 GB uMCP", "SAMSUNG"),
-    "KMQE60013M": ("6 GB LPDDR4X", "128 GB eMMC", "SAMSUNG"),
-    "KMD210013M": ("4 GB LPDDR4X", "64 GB uMCP", "SAMSUNG"),
-    "KMF750012M": ("2 GB LPDDR3", "16 GB eMMC", "SAMSUNG"),
-    "KMGD6001BM": ("4 GB LPDDR4X", "64 GB uMCP", "SAMSUNG"),
-    "KMDX60018M": ("8 GB LPDDR5", "128 GB uMCP", "SAMSUNG"),
-    "KM2V7001CM": ("8 GB LPDDR5", "256 GB uMCP", "SAMSUNG"),
-    "JZ150": ("3 GB LPDDR3", "32 GB eMMC", "MICRON"),
-    "NW813": ("4 GB LPDDR4X", "64 GB eMMC", "MICRON"),
-    "NW814": ("6 GB LPDDR4X", "128 GB uMCP", "MICRON"),
-    "SDINADF4128G": ("No RAM", "128 GB eMMC", "SANDISK"),
-    "SDINBDG464G": ("No RAM", "64 GB eMMC", "SANDISK")
-}
+# ----------------------------------------------------
+# COMBINED COMPLETE DATABASE
+# ----------------------------------------------------
+RAW_DATABASE_TEXT = """
+KLM4G1FETE 4GB - eMMC 5.1 Samsung (SEC) 153FBGA
+KLMAG1JENB 16GB - eMMC 5.1 Samsung (SEC) 153FBGA
+KLMAG1JETD 16GB - eMMC 5.1 Samsung (SEC) 153FBGA
+KLMAG2GE4A 16GB - eMMC 5.0 Samsung (SEC) 153FBGA
+KLMAG2GEAC 16GB - eMMC 5.0 Samsung (SEC) 153FBGA
+KLMAG2GEND 16GB - eMMC 5.0 Samsung (SEC) 153FBGA
+KLMAG2GESD 16GB - eMMC 5.1 Samsung (SEC) 153FBGA
+KLMAG2JENB 16GB - eMMC 5.0 Samsung (SEC) 153FBGA
+KLMAG4FEJA 16GB - eMMC 5.0 Samsung (SEC) 153FBGA
+KMF820012M 16GB 2GB eMCP (eMMC+LPDDR2) Samsung (SEC) 169FBGA
+KMQ310013A 16GB 1GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMQ310013B 16GB 1GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMQ310013M 16GB 1GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMQ820013M 16GB 2GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMQ8X000SA 16GB 2GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMQE60013M 16GB 1.5GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMR21000BM 16GB 2GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMR310001M 16GB 1GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMR31000BA 16GB 3GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMR820001M 16GB 2GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KLMBG2JENB 32GB - eMMC 5.0 Samsung (SEC) 153FBGA
+KLMBG4GE4A 32GB - eMMC 5.0 Samsung (SEC) 153FBGA
+KLMBG4GEND 32GB - eMMC 5.0 Samsung (SEC) 153FBGA
+KLMBG4JENB 32GB - eMMC 5.1 Samsung (SEC) 153FBGA
+KLMBG4JETD 32GB - eMMC 5.1 Samsung (SEC) 153FBGA
+KLMCG4JENB 32GB - eMMC 5.0 Samsung (SEC) 153FBGA
+KMQ210013M 32GB 2GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMQ72000SM 32GB 2GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMQ7X0013M 32GB 2GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMR4B0001M 32GB 3GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMRH60014M 32GB 3GB eMCP (eMMC+LPDDR4) Samsung (SEC) 169FBGA
+KMRX1000BMA 32GB 2GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KLMCG4JETD 64GB - eMMC 5.1 Samsung (SEC) 153FBGA
+KLMCG8GE4A 64GB - eMMC 5.0 Samsung (SEC) 153FBGA
+KLMCG8GEND 64GB - eMMC 5.0 Samsung (SEC) 153FBGA
+KLMCG8JENB 64GB - eMMC 5.0 Samsung (SEC) 153FBGA
+KLUCG2K1EA 64GB - UFS 2.0 Samsung (SEC) 254FBGA
+KLUCG4J1ED 64GB - UFS 2.1 Samsung (SEC) 254FBGA
+KMGX6001DM 64GB - UFS 2.1 Samsung (SEC) 254FBGA
+KMR5B0001M 64GB 4GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMRC10014M 64GB 4GB eMCP (eMMC+LPDDR4) Samsung (SEC) 169FBGA
+KMRH60014A 64GB 4GB eMCP (eMMC+LPDDR4) Samsung (SEC) 169FBGA
+KLMDG4JETD 128GB - eMMC 5.1 Samsung (SEC) 153FBGA
+KLMDG8JENB 128GB - eMMC 5.0 Samsung (SEC) 153FBGA
+KLUDG4U1EA 128GB - UFS 2.1 Samsung (SEC) 254FBGA
+KLUDG8V1EE 128GB - UFS 2.1 Samsung (SEC) 254FBGA
+KLUFG4RHDA 128GB - UFS 3.1 Samsung (SEC) 254FBGA
+KM5V7001DM 128GB 6GB uMCP (UFS+LPDDR4X) Samsung (SEC) 254FBGA
+KM5V8001DM 128GB 8GB uMCP (UFS+LPDDR4X) Samsung (SEC) 254FBGA
+KLUFG8RFDA 512GB - UFS 3.1 Samsung (SEC) 254FBGA
+MTFC4GMDEA 4GB - eMMC 4.41 Micron 153FBGA
+JW810 8GB - eMMC 5.0 Micron 153FBGA
+JY121 8GB - eMMC 4.5 Micron 153FBGA
+JY167 8GB - eMMC 5.0 Micron 153FBGA
+JW836 16GB - eMMC 5.0 Micron 153FBGA
+JW856 16GB - eMMC 5.1 Micron 153FBGA
+JY058 16GB 1GB eMCP (eMMC+LPDDR3) Micron 153FBGA
+JY976 16GB - eMMC 5.1 Micron 153FBGA
+JY997 16GB - eMMC 5.1 Micron 153FBGA
+JZ881 16GB - eMMC 5.1 Micron 153FBGA
+MTFC16GAKAECN 16GB - eMMC 5.0 Micron 153FBGA
+MTFC16GAPALBH 16GB - eMMC 5.1 Micron 153FBGA
+NW351 16GB - eMMC 5.1 Micron 153FBGA
+JW896 32GB - eMMC 5.0 Micron 153FBGA
+JWA97 32GB - eMMC 5.1 Micron 153FBGA
+JWB18 32GB - eMMC 5.1 Micron 153FBGA
+JZ156 32GB - eMMC 5.1 Micron 153FBGA
+JZ423 32GB - eMMC 5.1 Micron 153FBGA
+JZ616 32GB - eMMC 5.1 Micron 153FBGA
+JZ959 32GB - eMMC 5.1 Micron 153FBGA
+MTFC32GAKAECN 32GB - eMMC 5.0 Micron 153FBGA
+MTFC32GAPALBH 32GB - eMMC 5.1 Micron 153FBGA
+NW133 32GB - eMMC 5.1 Micron 153FBGA
+NW640 32GB 3GB eMCP (eMMC+LPDDR4) Micron 169FBGA
+JWA38 64GB - eMMC 5.1 Micron 153FBGA
+JWB27 64GB - eMMC 5.1 Micron 153FBGA
+JZ115 64GB - eMMC 5.1 Micron 153FBGA
+JZ144 64GB - eMMC 5.1 Micron 153FBGA
+JZ380 64GB - eMMC 5.1 Micron 153FBGA
+JZ512 64GB - eMMC 5.1 Micron 153FBGA
+JZ671 64GB - eMMC 5.1 Micron 153FBGA
+MTFC64GAKAECN 64GB - eMMC 5.0 Micron 153FBGA
+MTFC64GAPALBH 64GB - eMMC 5.1 Micron 153FBGA
+NW262 64GB - eMMC 5.1 Micron 153FBGA
+NW643 64GB 4GB eMCP (eMMC+LPDDR4) Micron 169FBGA
+JZ067 128GB - eMMC 5.1 Micron 153FBGA
+JZ159 128GB - eMMC 5.1 Micron 153FBGA
+JZ216 128GB - eMMC 5.1 Micron 153FBGA
+JZ341 128GB - eMMC 5.1 Micron 153FBGA
+JZ736 128GB - eMMC 5.1 Micron 153FBGA
+JZ828 128GB - eMMC 5.1 Micron 153FBGA
+MTFC128GAKAECN 128GB - eMMC 5.1 Micron 153FBGA
+MTFC128GAPALNS 128GB - eMMC 5.1 Micron 153FBGA
+NW267 128GB - eMMC 5.1 Micron 153FBGA
+NW658 128GB - eMMC 5.1 Micron 153FBGA
+H26M31003GMR 4GB - eMMC 4.5 SK Hynix 153FBGA
+H26M41103HPR 8GB - eMMC 5.0 SK Hynix 153FBGA
+H26M52103FMR 16GB - eMMC 5.0 SK Hynix 153FBGA
+H26M52208FPR 16GB - eMMC 5.1 SK Hynix 153FBGA
+H9HP19ABUMMDAR 16GB 2GB eMCP (eMMC+LPDDR4X) SK Hynix 169FBGA
+H9TP17A8JDAC 16GB 1GB eMCP (eMMC+LPDDR2) SK Hynix 169FBGA
+H9TQ17ABJTAC 16GB - eMMC 5.0 SK Hynix 153FBGA
+H9TQ17ABJTBC 16GB - eMMC 5.1 SK Hynix 153FBGA
+H9TQ17ABJTMC 16GB - eMMC 5.1 SK Hynix 153FBGA
+H9TQ17ADFTMC 16GB 2GB eMCP (eMMC+LPDDR4) SK Hynix 169FBGA
+H9TQ17ADFTMCUR 16GB 3GB eMCP (eMMC+LPDDR3) SK Hynix 169FBGA
+H9TQ17ADJTMC 16GB 2GB eMCP (eMMC+LPDDR3) SK Hynix 169FBGA
+H26M64103EMR 32GB - eMMC 5.1 SK Hynix 153FBGA
+H28U62301AMR 32GB - UFS 2.1 SK Hynix 254FBGA
+H9TP32A8JDAC 32GB 2GB eMCP (eMMC+LPDDR2) SK Hynix 169FBGA
+H9TQ18ABJTMC 32GB - eMMC 5.1 SK Hynix 153FBGA
+H9TQ26AAETMC 32GB 2GB eMCP (eMMC+LPDDR3) SK Hynix 169FBGA
+H9TQ26ACLTMCUR 32GB 4GB eMCP (eMMC+LPDDR3) SK Hynix 169FBGA
+H9TQ26ADFTAC 32GB - eMMC 5.0 SK Hynix 153FBGA
+H9TQ26ADFTBCUR 32GB 3GB eMCP (eMMC+LPDDR3) SK Hynix 169FBGA
+H9TQ26ADFTMC 32GB - eMMC 5.1 SK Hynix 153FBGA
+H9TQ27ADFTMC 32GB 3GB eMCP (eMMC+LPDDR4) SK Hynix 169FBGA
+H26M78103CCR 64GB - eMMC 5.1 SK Hynix 153FBGA
+H9HP52ACPMMDAR 64GB 4GB eMCP (eMMC+LPDDR4X) SK Hynix 169FBGA
+H9TQ32A6BTMC 64GB - eMMC 5.1 SK Hynix 153FBGA
+H9TQ52ACLTMC 64GB 4GB eMCP (eMMC+LPDDR4) SK Hynix 169FBGA
+H26M88002AMR 128GB - eMMC 5.1 SK Hynix 153FBGA
+H9TQ64A8GTMC 128GB - eMMC 5.1 SK Hynix 153FBGA
+H9TQ64ABJTMC 128GB 4GB eMCP (eMMC+LPDDR4) SK Hynix 169FBGA
+H28U74301AMR 256GB - UFS 2.1 SK Hynix 254FBGA
+H28U88301AMR 512GB - UFS 3.1 SK Hynix 254FBGA
+SDINBDA4-8G 8GB - eMMC 5.1 SanDisk / WD 153FBGA
+SDINBDG4-8G 8GB - eMMC 5.0 SanDisk / WD 153FBGA
+SDIN9DW4-16G 16GB 1GB eMCP (eMMC+LPDDR3) SanDisk / WD 169FBGA
+SDINBDA4-16G 16GB - eMMC 5.1 SanDisk / WD 153FBGA
+SDINBDG4-16G 16GB - eMMC 5.0 SanDisk / WD 153FBGA
+SDIN9DW4-32G 32GB 2GB eMCP (eMMC+LPDDR3) SanDisk / WD 169FBGA
+SDINBDA4-32G 32GB - eMMC 5.1 SanDisk / WD 153FBGA
+SDINBDG4-32G 32GB - eMMC 5.0 SanDisk / WD 153FBGA
+SDINBDA4-64G 64GB - eMMC 5.1 SanDisk / WD 153FBGA
+SDINADF4-128G 128GB - UFS 2.1 SanDisk / WD 254FBGA
+SDINBDA4-128G 128GB - eMMC 5.1 SanDisk / WD 153FBGA
+SDINADF4-256G 256GB - UFS 2.1 SanDisk / WD 254FBGA
+SDINFDO4-256G 256GB - UFS 3.0 SanDisk / WD 254FBGA
+SDINFDO4-512G 512GB - UFS 3.1 SanDisk / WD 254FBGA
+THGBMAG5A1JBAIR 4GB - eMMC 4.5 Toshiba / Kioxia 153FBGA
+THGBMAG6A2JBAIR 8GB - eMMC 4.5 Toshiba / Kioxia 153FBGA
+THGBMHG7C1LBAIL 16GB - eMMC 5.1 Toshiba / Kioxia 153FBGA
+THGBMJG6C1LBAIL 16GB - eMMC 5.0 Toshiba / Kioxia 153FBGA
+THGBMBG8D4KBAIR 32GB 2GB eMCP (eMMC+LPDDR3) Toshiba / Kioxia 169FBGA
+THGBMHG8C2LBAIL 32GB - eMMC 5.1 Toshiba / Kioxia 153FBGA
+THGBMJG7C2LBAIL 32GB - eMMC 5.0 Toshiba / Kioxia 153FBGA
+THGBMHG9C4LBAIR 64GB - eMMC 5.1 Toshiba / Kioxia 153FBGA
+THGBMJG8C4LBAU7 64GB - eMMC 5.0 Toshiba / Kioxia 153FBGA
+THGAF4G9N4LBAIR 128GB - UFS 2.1 Toshiba / Kioxia 254FBGA
+THGBMHT0C8LBAIG 128GB - eMMC 5.1 Toshiba / Kioxia 153FBGA
+THGAF8G9T43BAIR 256GB - UFS 3.1 Toshiba / Kioxia 254FBGA
+KMF720012M 8GB 1GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KMFE10012M 8GB 512MB eMCP (eMMC+LPDDR2) Samsung (SEC) 169FBGA
+KMFN10012M 8GB 1GB eMCP (eMMC+LPDDR2) Samsung (SEC) 169FBGA
+KMFNX0012M 8GB 1GB eMCP (eMMC+LPDDR2) Samsung (SEC) 169FBGA
+KMQE10013M 8GB 1GB eMCP (eMMC+LPDDR3) Samsung (SEC) 169FBGA
+KLUEG4U1ED 256GB - UFS 3.0 Samsung (SEC) 254FBGA
+KLUEG8U1EA 256GB - UFS 2.1 Samsung (SEC) 254FBGA
+KLUFG8RHDA 256GB - UFS 3.1 Samsung (SEC) 254FBGA
+KM5V0001DM 256GB 8GB uMCP (UFS+LPDDR4X) Samsung (SEC) 254FBGA
+"""
 
-# 5. Decoder Logic
-def master_decode_ic(code):
-    clean = code.upper().replace("-", "").strip()
+@st.cache_data
+def build_database():
+    db = {}
+    lines = RAW_DATABASE_TEXT.strip().split("\n")
+    for line in lines:
+        clean = line.strip()
+        if not clean:
+            continue
+        parts = clean.split()
+        if len(parts) >= 2:
+            code = parts[0].upper().replace('"', '').replace("'", "").strip()
+            rest = " ".join(parts[1:])
+            db[code] = rest
+    return db
+
+IC_DB = build_database()
+
+# Core IC Search Logic
+def search_ic(user_code):
+    clean = user_code.strip().upper().replace("-", "")
     if not clean:
-        return None, None, None
+        return None, None, None, None, None
 
-    if clean in EXACT_IC_DB:
-        ram, storage, brand = EXACT_IC_DB[clean]
-        return brand, ram, storage
+    matched_text = None
+    if clean in IC_DB:
+        matched_text = IC_DB[clean]
+    else:
+        for key in IC_DB:
+            if key in clean or clean in key:
+                matched_text = IC_DB[key]
+                break
 
-    for key in EXACT_IC_DB:
-        if key in clean or clean in key:
-            ram, storage, brand = EXACT_IC_DB[key]
-            return brand, ram, storage
+    if matched_text:
+        row_upper = matched_text.upper()
 
-    brand = "GENERIC / UNKNOWN"
-    ram = "Unknown"
-    storage = "Unknown"
+        # 1. Extract Brand
+        brand = "GENERIC / OTHER"
+        if "SK HYNIX" in row_upper or "HYNIX" in row_upper: brand = "SK HYNIX"
+        elif "SAMSUNG" in row_upper or "SEC" in row_upper: brand = "SAMSUNG (SEC)"
+        elif "MICRON" in row_upper: brand = "MICRON"
+        elif "TOSHIBA" in row_upper or "KIOXIA" in row_upper: brand = "TOSHIBA / KIOXIA"
+        elif "SANDISK" in row_upper or "WD" in row_upper: brand = "SANDISK / WD"
 
-    if clean.startswith(("H9", "H5")):
-        brand = "SK HYNIX"
-        if any(x in clean for x in ["15A", "16A", "17A", "15", "16", "17"]):
-            ram, storage = "2 GB LPDDR3", "16 GB eMMC"
-        elif any(x in clean for x in ["26A", "27A", "28A", "26", "27"]):
-            ram, storage = "3 GB LPDDR3", "32 GB eMMC"
-        elif any(x in clean for x in ["52A", "65A", "65", "52"]):
-            ram, storage = "4 GB LPDDR4X", "64 GB eMMC"
-        elif any(x in clean for x in ["1A2", "1M", "1A"]):
-            ram, storage = "6 GB LPDDR4X", "128 GB uMCP"
-        elif any(x in clean for x in ["2A2", "2A"]):
-            ram, storage = "8 GB LPDDR5", "256 GB uMCP"
+        # 2. Extract Storage and RAM
+        gb_matches = re.findall(r'(\d+(?:\.\d+)?\s*(?:GB|MB))', matched_text, re.IGNORECASE)
+        if len(gb_matches) >= 2:
+            storage = gb_matches[0].upper()
+            ram = gb_matches[1].upper()
+        elif len(gb_matches) == 1:
+            storage = gb_matches[0].upper()
+            ram = "No RAM (Pure Flash)"
+        else:
+            storage = "Unknown Storage"
+            ram = "Unknown RAM"
 
-    elif clean.startswith("KM"):
-        brand = "SAMSUNG"
-        if "60014BM" in clean or "60014B" in clean:
-            ram, storage = "4 GB LPDDR4X", "64 GB eMMC"
-        elif "60014" in clean or "P600" in clean:
-            ram, storage = "3 GB LPDDR3", "32 GB eMMC"
-        elif "60013" in clean or "QE600" in clean:
-            ram, storage = "6 GB LPDDR4X", "128 GB eMMC"
-        elif "7001" in clean or "2V700" in clean:
-            ram, storage = "8 GB LPDDR5", "256 GB uMCP"
-        elif "7500" in clean or "F750" in clean:
-            ram, storage = "2 GB LPDDR3", "16 GB eMMC"
+        # 3. Extract Protocol / Type (eMMC / UFS / eMCP / uMCP)
+        ic_type = "UNKNOWN"
+        type_match = re.search(r'(eMMC\s*\d+\.\d*|UFS\s*\d+\.\d*|uMCP|eMCP)', matched_text, re.IGNORECASE)
+        if type_match:
+            ic_type = type_match.group(0).upper()
+        else:
+            if "EMMC" in row_upper: ic_type = "eMMC"
+            elif "UFS" in row_upper: ic_type = "UFS"
+            elif "EMCP" in row_upper: ic_type = "eMCP"
+            elif "UMCP" in row_upper: ic_type = "uMCP"
 
-    elif clean.startswith(("JZ", "NW", "MT")):
-        brand = "MICRON"
-        if "150" in clean: ram, storage = "3 GB LPDDR3", "32 GB eMMC"
-        elif "813" in clean: ram, storage = "4 GB LPDDR4X", "64 GB eMMC"
-        elif "814" in clean: ram, storage = "6 GB LPDDR4X", "128 GB uMCP"
+        # 4. Extract Package BGA (e.g., 153FBGA, 254FBGA)
+        bga_match = re.search(r'(\d+FBGA|\d+BGA)', matched_text, re.IGNORECASE)
+        bga_type = bga_match.group(0).upper() if bga_match else "N/A"
 
-    if storage == "Unknown":
-        match = re.search(r'(16|32|64|128|256|512)', clean)
-        if match:
-            st_val = match.group()
-            storage = f"{st_val} GB"
-            ram_map = {"16": "2 GB", "32": "3 GB", "64": "4 GB", "128": "6 GB", "256": "8 GB"}
-            ram = ram_map.get(st_val, "Standard RAM")
+        return brand, ram, storage, ic_type, bga_type
 
-    return brand, ram, storage
+    return "NOT IN DATABASE", "Code Not Listed", "Code Not Listed", "N/A", "N/A"
 
-# 6. User Input & Button
-user_input = st.text_input("IC PART NUMBER DALEIN:", placeholder="e.g. H9TQ26ADFTAC, KMRP60014M...")
-click_search = st.button("🔍 DECODE IC SPECS NOW")
+# UI Input Layout
+user_input = st.text_input("", placeholder="🔍 ENTER IC NUMBER (e.g. KLM4G1FETE)...")
+click_search = st.button("DECODE SPECS NOW")
 
-# 7. Native Result UI (No Raw Code Bugs)
+# Results Display
 if click_search or user_input:
     if user_input.strip():
-        brand, ram, storage = master_decode_ic(user_input)
+        brand, ram, storage, ic_type, bga_type = search_ic(user_input)
         
-        st.divider()
+        st.markdown('<div class="result-card">', unsafe_allow_html=True)
+        st.markdown(f'<span class="brand-badge">BRAND: {brand}</span>', unsafe_allow_html=True)
         
-        # Brand Highlight
-        st.subheader(f"🏷️ BRAND: {brand}")
-        
-        # Clean Metric Cards
         col1, col2 = st.columns(2)
-        with col1:
+        with col1: 
             st.metric(label="⚡ RAM CAPACITY", value=ram)
-        with col2:
+            st.metric(label="📟 IC TYPE / PROTOCOL", value=ic_type)
+        with col2: 
             st.metric(label="💾 INTERNAL STORAGE", value=storage)
-    else:
-        st.warning("कृपया पहले IC पार्ट कोड टाइप करें!")
+            st.metric(label="📌 PACKAGE TYPE", value=bga_type)
+            
+        st.markdown('</div>', unsafe_allow_html=True)
