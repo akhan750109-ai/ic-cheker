@@ -1,109 +1,37 @@
 import streamlit as st
 import re
 
-# Page Configuration
-st.set_page_config(page_title="IC SPEC FINDER PRO", page_icon="⚡", layout="centered")
+# Page Configuration - Set Favicon and Title for Home Screen
+st.set_page_config(
+    page_title="IC SPEC FINDER PRO",
+    page_icon="⚡",  # यह आपके होम स्क्रीन आइकॉन के लिए सेट किया गया है
+    layout="centered"
+)
 
-# Visual Styling & PWA Link Integration
+# Visual Styling
 st.markdown("""
-    <head>
-        <link rel="manifest" href="/manifest.json">
-        <meta name="theme-color" content="#38bdf8">
-        <meta name="mobile-web-app-capable" content="yes">
-        <meta name="apple-mobile-web-app-capable" content="yes">
-    </head>
     <style>
-    /* Dark Futuristic Background */
-    .stApp { 
-        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); 
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    }
-    
-    /* Header Card Styling */
-    .header-card {
-        background: rgba(30, 41, 59, 0.7);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(56, 189, 248, 0.2);
-        border-radius: 16px;
-        padding: 20px;
-        text-align: center;
-        margin-bottom: 25px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-    }
-    .title-text { 
-        font-size: 32px; 
-        font-weight: 900; 
-        background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 5px;
-    }
-    .sub-text { 
-        font-size: 13px; 
-        color: #94a3b8; 
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        font-weight: 600;
-    }
-
-    /* Input & Button Styling */
-    .stTextInput input {
-        font-size: 18px !important; 
-        font-weight: 700 !important; 
-        color: #38bdf8 !important;
-        background-color: #0f172a !important; 
-        border: 2px solid #38bdf8 !important; 
-        border-radius: 12px !important;
-        text-align: center;
-        padding: 12px !important;
-    }
+    .stApp { background-color: #0f172a; font-family: 'Segoe UI', sans-serif; }
+    .title-text { font-size: 34px; font-weight: 900; text-align: center; color: #38bdf8; }
+    .sub-text { font-size: 14px; text-align: center; color: #94a3b8; margin-bottom: 25px; }
     .stButton>button {
-        width: 100%; 
-        background: linear-gradient(90deg, #0284c7 0%, #6366f1 100%) !important;
-        color: white !important; 
-        font-size: 16px !important; 
-        font-weight: 800 !important;
-        padding: 12px !important; 
-        border-radius: 12px !important; 
-        border: none !important;
-        box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
-        transition: all 0.3s ease;
+        width: 100%; background: linear-gradient(90deg, #0284c7 0%, #6366f1 100%) !important;
+        color: white !important; font-size: 18px !important; font-weight: 800 !important;
+        padding: 10px !important; border-radius: 8px !important; border: none !important;
     }
-
-    /* Result Card Styling */
-    .result-card {
-        background: rgba(30, 41, 59, 0.8);
-        border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 20px;
-        margin-top: 20px;
+    .stTextInput input {
+        font-size: 20px !important; font-weight: 800 !important; color: #38bdf8 !important;
+        background-color: #1e293b !important; border: 2px solid #38bdf8 !important; text-align: center;
     }
-    .brand-badge {
-        background: #0284c7;
-        color: white;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-weight: 800;
-        font-size: 14px;
-        display: inline-block;
-        margin-bottom: 15px;
-    }
-    
-    #MainMenu {visibility: hidden;} 
-    footer {visibility: hidden;}
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
-# Header Section
-st.markdown("""
-    <div class="header-card">
-        <div class="title-text">⚡ IC SPEC FINDER PRO</div>
-        <div class="sub-text">Mobile Hardware Specification Decoder</div>
-    </div>
-""", unsafe_allow_html=True)
+st.markdown('<div class="title-text">⚡ IC SPEC FINDER PRO</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-text">Mobile IC Hardware Specification Decoder</div>', unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# COMBINED COMPLETE DATABASE
+# COMBINED COMPLETE DATABASE (PREVIOUS + NEW DATA)
 # ----------------------------------------------------
 RAW_DATABASE_TEXT = """
 KLM4G1FETE 4GB - eMMC 5.1 Samsung (SEC) 153FBGA
@@ -290,7 +218,7 @@ IC_DB = build_database()
 def search_ic(user_code):
     clean = user_code.strip().upper().replace("-", "")
     if not clean:
-        return None, None, None, None, None
+        return None, None, None
 
     matched_text = None
     if clean in IC_DB:
@@ -304,7 +232,7 @@ def search_ic(user_code):
     if matched_text:
         row_upper = matched_text.upper()
 
-        # 1. Extract Brand
+        # Extract Brand
         brand = "GENERIC / OTHER"
         if "SK HYNIX" in row_upper or "HYNIX" in row_upper: brand = "SK HYNIX"
         elif "SAMSUNG" in row_upper or "SEC" in row_upper: brand = "SAMSUNG (SEC)"
@@ -312,8 +240,9 @@ def search_ic(user_code):
         elif "TOSHIBA" in row_upper or "KIOXIA" in row_upper: brand = "TOSHIBA / KIOXIA"
         elif "SANDISK" in row_upper or "WD" in row_upper: brand = "SANDISK / WD"
 
-        # 2. Extract Storage and RAM
+        # Extract Storage and RAM
         gb_matches = re.findall(r'(\d+(?:\.\d+)?\s*(?:GB|MB))', matched_text, re.IGNORECASE)
+        
         if len(gb_matches) >= 2:
             storage = gb_matches[0].upper()
             ram = gb_matches[1].upper()
@@ -324,43 +253,19 @@ def search_ic(user_code):
             storage = "Unknown Storage"
             ram = "Unknown RAM"
 
-        # 3. Extract Protocol / Type (eMMC / UFS / eMCP / uMCP)
-        ic_type = "UNKNOWN"
-        type_match = re.search(r'(eMMC\s*\d+\.\d*|UFS\s*\d+\.\d*|uMCP|eMCP)', matched_text, re.IGNORECASE)
-        if type_match:
-            ic_type = type_match.group(0).upper()
-        else:
-            if "EMMC" in row_upper: ic_type = "eMMC"
-            elif "UFS" in row_upper: ic_type = "UFS"
-            elif "EMCP" in row_upper: ic_type = "eMCP"
-            elif "UMCP" in row_upper: ic_type = "uMCP"
+        return brand, ram, storage
 
-        # 4. Extract Package BGA (e.g., 153FBGA, 254FBGA)
-        bga_match = re.search(r'(\d+FBGA|\d+BGA)', matched_text, re.IGNORECASE)
-        bga_type = bga_match.group(0).upper() if bga_match else "N/A"
+    return "NOT IN DATABASE", "Code Not Listed", "Code Not Listed"
 
-        return brand, ram, storage, ic_type, bga_type
+# UI Layout
+user_input = st.text_input("IC PART NUMBER DALEIN:", placeholder="e.g. KLM4G1FETE, KMQE60013M, MTFC16GAKAECN...")
+click_search = st.button("🔍 DECODE IC SPECS NOW")
 
-    return "NOT IN DATABASE", "Code Not Listed", "Code Not Listed", "N/A", "N/A"
-
-# UI Input Layout
-user_input = st.text_input("", placeholder="🔍 ENTER IC NUMBER (e.g. KLM4G1FETE)...")
-click_search = st.button("DECODE SPECS NOW")
-
-# Results Display
 if click_search or user_input:
     if user_input.strip():
-        brand, ram, storage, ic_type, bga_type = search_ic(user_input)
-        
-        st.markdown('<div class="result-card">', unsafe_allow_html=True)
-        st.markdown(f'<span class="brand-badge">BRAND: {brand}</span>', unsafe_allow_html=True)
-        
+        brand, ram, storage = search_ic(user_input)
+        st.divider()
+        st.subheader(f"🏷️ BRAND: {brand}")
         col1, col2 = st.columns(2)
-        with col1: 
-            st.metric(label="⚡ RAM CAPACITY", value=ram)
-            st.metric(label="📟 IC TYPE / PROTOCOL", value=ic_type)
-        with col2: 
-            st.metric(label="💾 INTERNAL STORAGE", value=storage)
-            st.metric(label="📌 PACKAGE TYPE", value=bga_type)
-            
-        st.markdown('</div>', unsafe_allow_html=True)
+        with col1: st.metric(label="⚡ RAM CAPACITY", value=ram)
+        with col2: st.metric(label="💾 INTERNAL STORAGE", value=storage)
