@@ -1,17 +1,32 @@
 import streamlit as st
 import re
 
-# Page Configuration - Set Favicon and Title for Home Screen
-st.set_page_config(
-    page_title="IC SPEC FINDER PRO",
-    page_icon="⚡",  # यह आपके होम स्क्रीन आइकॉन के लिए सेट किया गया है
-    layout="centered"
-)
+# Page Configuration
+st.set_page_config(page_title="IC SPEC FINDER PRO - UP Edition", page_icon="⚡", layout="centered")
 
 # Visual Styling
 st.markdown("""
     <style>
     .stApp { background-color: #0f172a; font-family: 'Segoe UI', sans-serif; }
+    
+    /* UP Govt Theme Banner Styling */
+    .up-banner {
+        background: linear-gradient(90deg, #ff9933 0%, #ffffff 50%, #138808 100%);
+        padding: 2px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    .up-banner-inner {
+        background-color: #1e293b;
+        color: #f8fafc;
+        text-align: center;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: 0.5px;
+    }
+    
     .title-text { font-size: 34px; font-weight: 900; text-align: center; color: #38bdf8; }
     .sub-text { font-size: 14px; text-align: center; color: #94a3b8; margin-bottom: 25px; }
     .stButton>button {
@@ -27,8 +42,17 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Digital UP & Aatmanirbhar Bharat Header Banner
+st.markdown("""
+    <div class="up-banner">
+        <div class="up-banner-inner">
+            🇮🇳 डिजिटल उत्तर प्रदेश | आत्मनिर्भर भारत की ओर एक सशक्त कदम
+        </div>
+    </div>
+""", unsafe_allow_html=True)
+
 st.markdown('<div class="title-text">⚡ IC SPEC FINDER PRO</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-text">Mobile IC Hardware Specification Decoder</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-text">Mobile IC Hardware Specification Decoder | UP Tech Innovation</div>', unsafe_allow_html=True)
 
 # ----------------------------------------------------
 # COMBINED COMPLETE DATABASE (PREVIOUS + NEW DATA)
@@ -70,6 +94,7 @@ KLMCG4JETD 64GB - eMMC 5.1 Samsung (SEC) 153FBGA
 KLMCG8GE4A 64GB - eMMC 5.0 Samsung (SEC) 153FBGA
 KLMCG8GEND 64GB - eMMC 5.0 Samsung (SEC) 153FBGA
 KLMCG8JENB 64GB - eMMC 5.0 Samsung (SEC) 153FBGA
+KLMDG2RCTE-B041 64GB - eMMC 5.1 Samsung (SEC) 153FBGA
 KLUCG2K1EA 64GB - UFS 2.0 Samsung (SEC) 254FBGA
 KLUCG4J1ED 64GB - UFS 2.1 Samsung (SEC) 254FBGA
 KMGX6001DM 64GB - UFS 2.1 Samsung (SEC) 254FBGA
@@ -127,6 +152,8 @@ JZ736 128GB - eMMC 5.1 Micron 153FBGA
 JZ828 128GB - eMMC 5.1 Micron 153FBGA
 MTFC128GAKAECN 128GB - eMMC 5.1 Micron 153FBGA
 MTFC128GAPALNS 128GB - eMMC 5.1 Micron 153FBGA
+MTFC128GBCAQTC-WT 128GB - eMMC 5.1 Micron 153FBGA
+MTFC256GBCAQTC-WT 256GB - eMMC 5.1 Micron 153FBGA
 NW267 128GB - eMMC 5.1 Micron 153FBGA
 NW658 128GB - eMMC 5.1 Micron 153FBGA
 H26M31003GMR 4GB - eMMC 4.5 SK Hynix 153FBGA
@@ -169,6 +196,8 @@ SDIN9DW4-32G 32GB 2GB eMCP (eMMC+LPDDR3) SanDisk / WD 169FBGA
 SDINBDA4-32G 32GB - eMMC 5.1 SanDisk / WD 153FBGA
 SDINBDG4-32G 32GB - eMMC 5.0 SanDisk / WD 153FBGA
 SDINBDA4-64G 64GB - eMMC 5.1 SanDisk / WD 153FBGA
+SDINBDI4-64G 64GB - eMMC 5.1 SanDisk / WD 153FBGA
+SDINADF4-64G 64GB - eMMC 5.1 (1.8V VCCQ) SanDisk / WD 153FBGA
 SDINADF4-128G 128GB - UFS 2.1 SanDisk / WD 254FBGA
 SDINBDA4-128G 128GB - eMMC 5.1 SanDisk / WD 153FBGA
 SDINADF4-256G 256GB - UFS 2.1 SanDisk / WD 254FBGA
@@ -183,6 +212,7 @@ THGBMHG8C2LBAIL 32GB - eMMC 5.1 Toshiba / Kioxia 153FBGA
 THGBMJG7C2LBAIL 32GB - eMMC 5.0 Toshiba / Kioxia 153FBGA
 THGBMHG9C4LBAIR 64GB - eMMC 5.1 Toshiba / Kioxia 153FBGA
 THGBMJG8C4LBAU7 64GB - eMMC 5.0 Toshiba / Kioxia 153FBGA
+THGAMRG7T13BAIL 64GB - eMMC 5.1 (1.8V VCCQ) Kioxia 153FBGA
 THGAF4G9N4LBAIR 128GB - UFS 2.1 Toshiba / Kioxia 254FBGA
 THGBMHT0C8LBAIG 128GB - eMMC 5.1 Toshiba / Kioxia 153FBGA
 THGAF8G9T43BAIR 256GB - UFS 3.1 Toshiba / Kioxia 254FBGA
@@ -195,6 +225,11 @@ KLUEG4U1ED 256GB - UFS 3.0 Samsung (SEC) 254FBGA
 KLUEG8U1EA 256GB - UFS 2.1 Samsung (SEC) 254FBGA
 KLUFG8RHDA 256GB - UFS 3.1 Samsung (SEC) 254FBGA
 KM5V0001DM 256GB 8GB uMCP (UFS+LPDDR4X) Samsung (SEC) 254FBGA
+PTE8A0HR-X12E 128GB - eMMC 5.1 Kingston 153FBGA
+SGM8000J-S21BBG 64GB - eMMC 5.1 SiliconGo 153FBGA
+SGM8000J-S21BAG 32GB - eMMC 5.1 SiliconGo 153FBGA
+FEMDNN128G-C9C76 128GB - eMMC 5.1 FORESEE 153FBGA
+YMEC7C0TG1A2C3 64GB - eMMC 5.1 YMTC 153FBGA
 """
 
 @st.cache_data
@@ -239,6 +274,10 @@ def search_ic(user_code):
         elif "MICRON" in row_upper: brand = "MICRON"
         elif "TOSHIBA" in row_upper or "KIOXIA" in row_upper: brand = "TOSHIBA / KIOXIA"
         elif "SANDISK" in row_upper or "WD" in row_upper: brand = "SANDISK / WD"
+        elif "KINGSTON" in row_upper: brand = "KINGSTON"
+        elif "SILICONGO" in row_upper: brand = "SILICONGO"
+        elif "FORESEE" in row_upper: brand = "FORESEE"
+        elif "YMTC" in row_upper: brand = "YMTC"
 
         # Extract Storage and RAM
         gb_matches = re.findall(r'(\d+(?:\.\d+)?\s*(?:GB|MB))', matched_text, re.IGNORECASE)
@@ -258,7 +297,7 @@ def search_ic(user_code):
     return "NOT IN DATABASE", "Code Not Listed", "Code Not Listed"
 
 # UI Layout
-user_input = st.text_input("IC PART NUMBER DALEIN:", placeholder="e.g. KLM4G1FETE, KMQE60013M, MTFC16GAKAECN...")
+user_input = st.text_input("IC PART NUMBER DALEIN:", placeholder="e.g. KLM4G1FETE, PTE8A0HR-X12E, MTFC128GBCAQTC-WT...")
 click_search = st.button("🔍 DECODE IC SPECS NOW")
 
 if click_search or user_input:
